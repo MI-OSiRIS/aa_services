@@ -42,23 +42,27 @@ ultra fast resources?!  That'd be awesome.
 
 =cut
 
+use Mojo::Base -base;
+use Mojo::Util qw/trim/;
 use MIME::Base64 qw/encode_base64url decode_base64url/;
 use Crypt::Digest qw/digest_data digest_data_hex/;
 use Crypt::X509;
 use Crypt::PK::RSA;
 
 # define our signature and validation configurations
-my $crypto = {
-    'RS256' => {
-        sign => sub {
-            my ($sk, $to_sign) = @_;
-            return encode_base64url($sk->sign_message($to_sign, 'SHA256', 'v1.5'), '');
+has crypto => sub { 
+    return {
+        'RS256' => {
+            sign => sub {
+                my ($sk, $to_sign) = @_;
+                return encode_base64url($sk->sign_message($to_sign, 'SHA256', 'v1.5'), '');
+            },
+            verify => sub {
+                my ($pk, $sig, $to_verify) = @_;
+                return $pk->verify_message(decode_base64url($sig), $to_verify, 'SHA256', 'v1.5');
+            }
         },
-        verify => sub {
-            my ($pk, $sig, $to_verify) = @_;
-            return $pk->verify_message(decode_base64url($sig), $to_verify, 'SHA256', 'v1.5');
-        }
-    },
+    };
 };
 
 =item new($target, $access, $sk) [B<constructor>]
@@ -136,7 +140,82 @@ use the key you specified when you called new() to sign and generate the JWT.
 =cut
 
 sub to_string {
-    
+    my ($self) = @_;
+
+    # default to an empty hashref
+    my $access = $self->{access} eq "HASH" ? $self->{access} : {};
+
+    my $header = encode_base64url(encode_json({
+        alg => 'RS256',
+        x5t => encode_base64url(digest_data('SHA256', b64_decode($self->config->{pem_string}))),
+        x5u => $self->config->{front_door_url} . '/oaa/pubkey.pem',
+    }), '');
+
+    # scope the jwt to Mi-OSiRIS
+    unless ($access->{aud} =~ /^urn\:MI-OSiRIS\:/) {
+        $access->{aud} = 'urn:MI-OSiRIS:$access->{aud}';
+    }
+
+    $access = {
+        sub => $access->{eppn},
+        exp => time + $self->config->{session_length},
+        nbf => time,
+        iat => time,
+        jti => $c->new_uuid,
+
+        # let passed values override defaults
+        %$access,
+
+        # but don't let anything override the issuer
+        iss => ('urn:MI-OSiRIS:' . trim `uname -n`),
+    };
+
+
+    my $token = $c->m->resultset("Academica::Plugin::OAuth2::Model::Token")->create({
+        academica_user => $user->id,
+        client => $client->id,
+        unique_id => $jwt->{jti},
+        signer_thumbprint => $c->thumbprint(b64_decode($c->oauth2->x509_string)),
+        expire_time => $jwt->{exp},
+    });
+
+    # do user specific stuff here.
+    if (my $password = delete $jwt->{_password}) {
+        # they supplied a password... make sure it's for this user.
+        if ($c->authenticate_user($user->userid, $password)) {
+            # this is this user's password, this must be the intention of the caller
+            my $key = $c->crypto_stream_key;
+            my $enc_pw = $c->encrypt_pw($password, $key, $token->id);
+
+            # the key goes in the database
+            $token->auxiliary_secret($key);
+            
+            # but the encrypted password only ever goes into the token
+            $jwt->{ap_cred} = $enc_pw;
+        }
+    }
+
+    if (my $refresh = delete $jwt->{_refresh_token}) {
+        $token->is_refresh_token(1);
+    }
+
+    # update the token in the database if we changed anything..
+    if ($token->is_changed) {
+        $token->update;
+    }
+
+    my $payload = encode_base64url(encode_json($jwt));
+    my $sig = $crypto->{$c->oauth2->config->{signature_method}}->{sign}->($c->oauth2->rsa_sk, "$header.$payload");
+
+    if ($json_serialization) {
+        return encode_json({
+            header => [$header],
+            payload => $payload,
+            signature => [$sig],
+        });
+    } else {
+        return "$header.$payload.$sig";
+    }
 }
 
 =pod
