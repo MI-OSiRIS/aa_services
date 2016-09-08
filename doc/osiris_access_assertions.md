@@ -46,7 +46,7 @@ objectClass ( 1.3.5.1.3.1.17128.313.3
     "jti": "b724c2c5-0a42-4d0f-9c69-c21e240ac20b",
     "iat": 1473280947,
     "exp": 1473280977,
-    "sub": ["ak1520@wayne.edu", "urn:MI-OSiRIS:comanage:1"],
+    "sub": ["ak1520@wayne.edu", "urn:1.3.5.1.3.1.17128.313.1.1:SGvZyx1ziKvnNr7_q8OrBGauJUm4dIa:comanage:1"],
     "aud": [
         "urn:oid:1.3.5.1.3.1.17128.313.1.1:AfRlV67YnPf-Q-8WpM23B7Ds7vlIJJER", "urn:oid:1.3.5.1.3.1.17128.313.1.1:hRiHEh-3fCe47Kg0UhMVjx1RRYVsdqDk"
     ],
