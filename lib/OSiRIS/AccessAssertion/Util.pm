@@ -32,9 +32,16 @@ of OSiRIS Access Assertions (OAR, OAG, OAA, OAT and ORTs)
 
 use Mojo::Base 'Mojo::Util';
 use Mojo::Util @Mojo::Util::EXPORT_OK;
+
+use Crypt::X509;
+use Crypt::PK::RSA;
 use Crypt::Digest qw/digest_data digest_data_hex digest_file digest_file_hex/;
-use MIME::Base64 qw/encode_base64url decode_base64url/;
 use Crypt::Sodium;
+
+use MIME::Base64 qw/encode_base64url decode_base64url/;
+use UUID::Tiny;
+use Carp qw/croak/;
+
 use Exporter 'import';
 
 our @EXPORT_OK = (
@@ -53,10 +60,59 @@ our @EXPORT_OK = (
     /,
 )
 
+my @OPENSSL_DEFAULTS = (
+    country => "US",
+    state => "Michigan",
+    locality => "Detroit",
+    organization => "Wayne State University",
+    organizational_unit => "MI-OSiRIS",
+    email_address => 'ak1520@wayne.edu',
+    bits => 4096,
+    days => 7300,
+);
+
 # Aliases
 monkey_patch(__PACKAGE__, 'b64u_encode', \&encode_base64url);
-monkey_patch(__PACKAGE__, 'b64u"decode', \&decode_base64url);
+monkey_patch(__PACKAGE__, 'b64u_decode', \&decode_base64url);
+monkey_patch(__PACKAGE__, 'armor', \&harness);
+monkey_patch(__PACKAGE__, 'unarmor', \&unharness);
+monkey_patch(__PACKAGE__, 'gen_keys', \&gen_self_signed_rsa_pair);
 
+sub gen_self_signed_rsa_pair {
+    my ($user_config, $key_file, $cert_file) = @_;
+    my $config = {
+        @OPENSSL_DEFAULTS,
+        each %$user_config
+    };
+
+    unless (exists $config->{common_name} && $config->{common_name}) {
+        $config->{common_name} = "urn:uuid:" . new_uuid();
+    }
+
+    open my $ossl_cfg, '>', "/tmp/osiris_openssl_config.$$.conf";
+    print $ossl_cfg "[ req ]\n";
+    print $ossl_cfg "default_bits = $config->{bits}\n";
+    print $ossl_cfg "distinguished_name = req_distinguished_name\n";
+    print $ossl_cfg "prompt = no\n\n";
+
+    print $ossl_cfg "[ req_distinguished_name ]\n";
+    print $ossl_cfg "C=$config->{country}\n";
+    print $ossl_cfg "ST=$config->{state}\n";
+    print $ossl_cfg "L=$config->{locality}\n";
+    print $ossl_cfg "O=$config->{organization}\n";
+    print $ossl_cfg "OU=$config->{organizational_unit}\n";
+    print $ossl_cfg "CN=$config->{common_name}\n";
+    print $ossl_cfg "emailAddress=$config->{administrator_email}\n";
+    close $ossl_cfg;
+
+
+}
+
+sub new_uuid {
+    return uc(create_UUID_as_string(UUID_V4));
+}
+
+# random character generators, more flavors than anyone should ever need
 sub random_bytes {
     my ($length) = @_;
     return randombytes_buf($length // 32);

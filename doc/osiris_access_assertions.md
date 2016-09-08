@@ -12,19 +12,43 @@
 
 * _Resource Authorities_ - e.g. OSiRIS `stpd`, has certificates and will sign tokens issued by _Identity Authorities_ if certain criteria are met.  This gives resource owners a bit of their own AuthZ power and might come in handy.  This also introduces a point in the OAA issuance flow for provisioning of resources themselves.  Even if access keys are ephemeral, the resources themselves (UNIX Accounts, sudo rights, filesystems, namespaces, and block devices) are not.
 
+## LDAP Schema (utilize oid urns below)
+
+```
+attributeType ( 1.3.5.1.3.1.17128.313.1.1
+    NAME 'osirisKeyThumbprint',
+    DESC 'a Base64-URL encoded SHA256 hash of a DER encoded certificate'
+    EQUALITY caseExactMatch
+    SINGLE_VALUE
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 )
+
+objectClass ( 1.3.5.1.3.1.17128.313.1 
+    NAME 'osirisEntity' SUP top STRUCTURAL 
+    MAY ( osirisKeyThumbprint ) )
+
+objectClass ( 1.3.5.1.3.1.17128.313.2 
+    NAME 'osirisResourceProvider' SUP top STRUCTURAL 
+    MUST ( osirisKeyThumbprint ) )
+
+objectClass ( 1.3.5.1.3.1.17128.313.3 
+    NAME 'osirisCentralAuthority' SUP top STRUCTURAL 
+    MUST ( osirisKeyThumbprint ) )
+
+```
+
 ## OAA Issuance Flow
 
 ### Resource Assertion Request
 
 ```
 {
-    "iss": "urn:MI-OSiRIS",
+    "iss": "urn:oid:1.3.5.1.3.1.17128.313.1.1:SGvZyx1ziKvnNr7_q8OrBGauJUm4dIa",
     "jti": "b724c2c5-0a42-4d0f-9c69-c21e240ac20b",
     "iat": 1473280947,
     "exp": 1473280977,
     "sub": ["ak1520@wayne.edu", "urn:MI-OSiRIS:comanage:1"],
     "aud": [
-        "urn:MI-OSiRIS:AfRlV67YnPf-Q-8WpM23B7Ds7vlIJJER", "urn:MI-OSiRIS:hRiHEh-3fCe47Kg0UhMVjx1RRYVsdqDk"
+        "urn:oid:1.3.5.1.3.1.17128.313.1.1:AfRlV67YnPf-Q-8WpM23B7Ds7vlIJJER", "urn:oid:1.3.5.1.3.1.17128.313.1.1:hRiHEh-3fCe47Kg0UhMVjx1RRYVsdqDk"
     ],
 
     // session key encrypted with each resource provider's public key
