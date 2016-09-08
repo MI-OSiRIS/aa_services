@@ -21,20 +21,8 @@ package OSiRIS::AccessAssertion::Util;
 
 =head1 NAME
 
-OSiRIS::AccessAssertion - Class for parsing, validating, and managing OSiRIS Access
-Assertion (OAA) objects
-
-=head1 OVERVIEW
-
-OAAs are a form of L<JSON Web Token|https://jwt.io> that are signed by a central OSiRIS
-authority and instruct services running on registered OSiRIS resources to configure their
-resources accordingly.  The two primary users of this library are the B<St. Peter Daemon>
-which acts as the primary consumer of OAAs and the B<OSiRIS Access Keyring Daemon> which 
-issues, stores, and delivers OAAs at hopefully appropriate times.
-
-At this point OAAs are all RS256 JWTs.  Any JWT library should be able to parse and 
-validate an OAA, not sure what you'd do with it though.  Maybe grant us access to your 
-ultra fast resources?!  That'd be awesome.
+OSiRIS::AccessAssertion::Util - A utility class for dealing with the multiple types
+of OSiRIS Access Assertions (OAR, OAG, OAA, OAT and ORTs)
 
 =head1 FUNCTIONS / EXPORTS
 

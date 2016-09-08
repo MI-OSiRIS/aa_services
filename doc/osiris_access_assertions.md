@@ -46,26 +46,39 @@
         // it 'advanced', and include extra information to facilitate the
         // grant
         {
-            // the label is what we call this access
+            // the label is what we call this access (required)
             "label": "shell-account",
 
             // if present it means only these RPs should consider this
-            // portion of the OAR
+            // portion of the OAR (optional)
             "aud": ["urn:MI-OSiRIS:hRiHEh-3fCe47Kg0UhMVjx1RRYVsdqDk"],
             
             // preflight run to see if resource has been provisioned, if this 
             // code returns 1, then run "grant", if this code returns 0 then
-            // run "prov", if this code returns -1 then run "dprov"
+            // run "prov", if this code returns -1 then run "dprov" (required)
             "pchk": ["1+CeZgfwM5DdboGVlrHmK3rashzaLiJf4h7YdlVkdDo6FM0jT4l4K"],
             
-            // what to run to provision access
+            // what to run to provision access (optional)
             "prov": "[zaURai/rvr77Lv31xJXQPR0pNA63JC4am0FS8/gimfv+1LcV"],
             
-            // what to run to deprovision resource
+            // what to run to deprovision resource (optional)
             "dprov": "[zaURai/rvr77Lv31xJXQPR0pNA63JC4am0FS8/gimfv+1LcV"],
             
-            // what to run to grant ephemeral access to the resource
-            "grant": ["zaURai/rvr77Lv31xJXQPR0pNA63JC4am0FS8/gimfv+1LcV"]
+            // what to run to grant ephemeral access to the resource or to
+            // actually perform the action defined by this label (optional)
+            "grant": ["zaURai/rvr77Lv31xJXQPR0pNA63JC4am0FS8/gimfv+1LcV"],
+
+            // what to run to revoke ephemeral access to the resource or to
+            // actually undo the action defined by this label (optional)
+            "revoke": ["rvr77Lv31xJXQPR0pNA63JC4am0FS8"],
+
+            // requested provision expiration time (dprov runs after this time,
+            // optional, defaults to the heat death of the universe)
+            "pexp": 1504816977,
+
+            // requested grant expiration time (ephemeral access is removed
+            // after this time, optional, defaults to iat + (86400 * 7))
+            "gexp": 1473885747
         }
     ],
     resources: [
