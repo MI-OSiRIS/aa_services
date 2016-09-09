@@ -32,6 +32,7 @@ of OSiRIS Access Assertions (OAR, OAG, OAA, OAT and ORTs)
 
 use Mojo::Base 'Mojo::Util';
 use Mojo::Util @Mojo::Util::EXPORT_OK;
+use Mojo::JSON qw/to_json from_json encode_json decode_json/;
 
 use Crypt::X509;
 use Crypt::PK::RSA;
@@ -48,11 +49,11 @@ our @EXPORT_OK = (
     @Mojo::Util::EXPORT_OK,
     # crypto functions
     qw/
-        new_crypto_stream_key crypto_stream_xor
+        new_crypto_stream_key crypto_stream_xor gen_rsa_keys
     /,
     # encoding functions
     qw/
-        a85_encode a85_decode b64u_encode b64u_decode harness unharness
+        a85_encode a85_decode b64u_encode b64u_decode harness unharness armor unarmor
     /,
     # random string generators
     qw/
@@ -76,7 +77,12 @@ monkey_patch(__PACKAGE__, 'b64u_encode', \&encode_base64url);
 monkey_patch(__PACKAGE__, 'b64u_decode', \&decode_base64url);
 monkey_patch(__PACKAGE__, 'armor', \&harness);
 monkey_patch(__PACKAGE__, 'unarmor', \&unharness);
-monkey_patch(__PACKAGE__, 'gen_keys', \&gen_self_signed_rsa_pair);
+monkey_patch(__PACKAGE__, 'gen_rsa_keys', \&gen_self_signed_rsa_pair);
+
+sub opaque_block {
+    my ($hr, $key) = @_;
+    return b64u_encode(crypto_stream_xor())
+}
 
 sub gen_self_signed_rsa_pair {
     my ($user_config, $key_file, $cert_file) = @_;
@@ -104,8 +110,6 @@ sub gen_self_signed_rsa_pair {
     print $ossl_cfg "CN=$config->{common_name}\n";
     print $ossl_cfg "emailAddress=$config->{administrator_email}\n";
     close $ossl_cfg;
-
-
 }
 
 sub new_uuid {
@@ -139,7 +143,7 @@ sub random_b64u {
 }
 
 sub new_crypto_stream_key {
-    return encode_base64(randombytes_buf(crypto_stream_KEYBYTES), '');
+    return encode_a85(randombytes_buf(crypto_stream_KEYBYTES), '');
 }
 
 sub a85_encode {

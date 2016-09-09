@@ -43,7 +43,7 @@ objectClass ( 1.3.5.1.3.1.17128.313.3
 ```
 {
     "iss": "urn:oid:1.3.5.1.3.1.17128.313.1.1:SGvZyx1ziKvnNr7_q8OrBGauJUm4dIa",
-    "jti": "b724c2c5-0a42-4d0f-9c69-c21e240ac20b",
+    "jti": "E821240C-5494-4B40-8387-5DC3A3B37813",
     "iat": 1473280947,
     "exp": 1473280977,
     "sub": ["ak1520@wayne.edu", "urn:1.3.5.1.3.1.17128.313.1.1:SGvZyx1ziKvnNr7_q8OrBGauJUm4dIa:comanage:1"],
@@ -61,21 +61,40 @@ objectClass ( 1.3.5.1.3.1.17128.313.3
         "/02ZGeOePwriwiO6F3r4eok"
     ],
 
-    // an array of access 
-    // know how to provision and grant
-    access: [
-        "read", "write", "admin",
+    // at any level an "_opaque" property may occur.  it is to be base64url
+    // decoded, and decrypted with the session key, and its properties are 
+    // to be merged into the resulting object structure in the place where
+    // it is found, for example
 
-        // but if the 'access' is an object instead of a string consider
-        // it 'advanced', and include extra information to facilitate the
-        // grant
+    "_opaque": {
+        "nonce": 
+    }
+
+    // an array of access we're requesting.  order corresponds to the
+    // 'resources' array below, here we request 'read' access to ceph
+    // filesystems science1:/some/science, and sci45:/more/science. 
+    // 'read', 'write', and 'admin' access to 'science2:/mad/science' 
+    // and shell accounts and access to 'science.example.com' and
+    // 'shells.archimedes.gr'
+    access: [
+        // literal strings represent single types of access, could also be
+        // written as ["read"],
+        "read",
+
+        // arrays represent multiple types of access
+        ["read", "write", "admin"],
+
+        // but if the 'access' is an object instead of a string or array, 
+        // consider it 'advanced', and include extra information to facilitate
+        // the grant
         {
             // the label is what we call this access (required)
             "label": "shell-account",
 
-            // if present it means only these RPs should consider this
+            // if present it means only these RPs should consider this but
+            // say we know these resources offer shell accounts
             // portion of the OAR (optional)
-            "aud": ["urn:MI-OSiRIS:hRiHEh-3fCe47Kg0UhMVjx1RRYVsdqDk"],
+            "aud": ["urn:oid:1.3.5.1.3.1.17128.313.1.1:hRiHEh-3fCe47Kg0UhMVjx1RRYVsdqDk"],
             
             // preflight run to see if resource has been provisioned, if this 
             // code returns 1, then run "grant", if this code returns 0 then
@@ -83,13 +102,17 @@ objectClass ( 1.3.5.1.3.1.17128.313.3
             "pchk": ["1+CeZgfwM5DdboGVlrHmK3rashzaLiJf4h7YdlVkdDo6FM0jT4l4K"],
             
             // what to run to provision access (optional)
+            // e.g. this code could useradd 
             "prov": "[zaURai/rvr77Lv31xJXQPR0pNA63JC4am0FS8/gimfv+1LcV"],
             
             // what to run to deprovision resource (optional)
+            // e.g. this code could tar up a home dir, userdel -r, and email
+            // the user that they have 30 days to download it
             "dprov": "[zaURai/rvr77Lv31xJXQPR0pNA63JC4am0FS8/gimfv+1LcV"],
             
             // what to run to grant ephemeral access to the resource or to
             // actually perform the action defined by this label (optional)
+            // e.g. this code could email the user a temp password
             "grant": ["zaURai/rvr77Lv31xJXQPR0pNA63JC4am0FS8/gimfv+1LcV"],
 
             // what to run to revoke ephemeral access to the resource or to
@@ -105,17 +128,52 @@ objectClass ( 1.3.5.1.3.1.17128.313.3
             "gexp": 1473885747
         }
     ],
+
     resources: [
-        'monhost:/some/path',
+        // as with "access" above, arrays list multiple resources
+        ['science1:/some/science', 'sci45:/more/science'],
+
+        // string literals list single resources
+        'science2:/mad/science',
+        [
+            // and objects denote more "complex" data
+            {
+                "host": "science.example.com",
+                "requested_userid": "ak1520",
+                "ssh_pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB3+iRTnUqdbCgiXY3rbVbVXR1r1RbZE/z3Pfxb6M/qz ak1520@example.edu"
+            },
+            {
+                "host": "shells.archimedes.gr",
+                "requested_userid": "ak1520",
+                "ssh_pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB3+iRTnUqdbCgiXY3rbVbVXR1r1RbZE/z3Pfxb6M/qz ak1520@example.edu"
+            }
+        ]
     ]
 }
 ```
 
 ### Resource Assertion Grant
+
+The grant contains specifics about how the _Resource Provider_ did to facilitate the OAR, it will also
+explicitly point out what parts of the OAR it refused or had problems facilitating.  For security purposes
+the OAG should encrypt sensitive information it needs for itself with a symmetric key known only to itself.
+
+A new symmetric key should be created for every OAG ID and stored in a local database of keys until the OAG
+itself expires.  _OAG_s may be renewed / refreshed as part of the refresh process done in an _ORT_, therefore
+expiry times on _OAG_s should be slightly longer than the refresh time of _ORT_s, else the deprovision actions
+and/or the removal of session encryption key happens before the user has a chance to refresh their _OAG_.
+
+This puts expiry time frames for OAGs in the "months/years" range, but none the less they should eventually 
+expire.
+
 ```
 {
-    "iss": "urn:MI-OSiRIS:AfRlV67YnPf-Q-8WpM23B7Ds7vlIJJER",
-    "sub": "ak1520@wayne.edu",
+    "iss": "urn:oid:1.3.5.1.3.1.17128.313.1.1:hRiHEh-3fCe47Kg0UhMVjx1RRYVsdqDk",
+    "iat": 1473280957,
+    "exp": 1567888957,
+    "sub": ["ak1520@wayne.edu", "urn:1.3.5.1.3.1.17128.313.1.1:SGvZyx1ziKvnNr7_q8OrBGauJUm4dIa:comanage:1"],
+    "jti": "51679296-37B9-45BE-BE25-A371CF27E5D2",
+
 
 }
 ```
