@@ -23,22 +23,22 @@ attributeType ( 1.3.5.1.3.1.17128.313.1.1
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 )
 
 objectClass ( 1.3.5.1.3.1.17128.313.1 
-    NAME 'osirisEntity' SUP top STRUCTURAL 
+    NAME 'osirisEntity' SUP top AUXILIARY 
     MAY ( osirisKeyThumbprint ) )
 
 objectClass ( 1.3.5.1.3.1.17128.313.2 
-    NAME 'osirisResourceProvider' SUP top STRUCTURAL 
+    NAME 'osirisResourceProvider' SUP top AUXILIARY 
     MUST ( osirisKeyThumbprint ) )
 
 objectClass ( 1.3.5.1.3.1.17128.313.3 
-    NAME 'osirisCentralAuthority' SUP top STRUCTURAL 
+    NAME 'osirisCentralAuthority' SUP top AUXILIARY 
     MUST ( osirisKeyThumbprint ) )
 
 ```
 
 ## OAA Issuance Flow
 
-### Resource Assertion Request
+### Access Request
 
 ```
 {
@@ -152,9 +152,9 @@ objectClass ( 1.3.5.1.3.1.17128.313.3
 }
 ```
 
-### Resource Assertion Grant
+### Access Grant
 
-The grant contains specifics about how the _Resource Provider_ did to facilitate the OAR, it will also
+The grant contains specifics about what the _Resource Provider_ did to facilitate the OAR, it will also
 explicitly point out what parts of the OAR it refused or had problems facilitating.  For security purposes
 the OAG should encrypt sensitive information it needs for itself with a symmetric key known only to itself.
 

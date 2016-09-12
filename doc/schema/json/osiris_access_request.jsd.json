@@ -1,0 +1,49 @@
+//
+// Schema Definition of an OSiRIS Access Request
+// 
+{
+    "title": "OSiRIS Access Request",
+    "type": "object",
+    "version": "0.1",
+    "properties": {
+        "iss": {
+            "type": "string",
+            "description": "a unique identifier for the issuer of the request (url, urn:oid, etc)"
+        },
+        "jti": {
+            "type": "string",
+            "description": "a unique identifier for the request itself"
+        },
+        "iat": {
+            "type": "integer",
+            "description": "the unix timestamp of the time this token was created ('valid not before')"
+        },
+        "exp": {
+            "type": "integer",
+            "description": "a unix timestamp of the time where this request becomes invalid ('valid not after')"
+        },
+        "sub": {
+            "type": ["string", "array"],
+            "description": "the principal or principals (subjects) this request is made on behalf of"
+        },
+        "aud": {
+            "type": ["string", "array"],
+            "description": "the resource provider or providers (audience) this request is made to"
+        },
+        "access": {
+            "type": "array",
+        },
+        "resources": {
+            "type": "array",
+        },
+        "_sk": {
+            "type": "array",
+            "description": "a list of base64url encoded, public key encrypted, symmetric encryption keys to be used for encrypted properties or portions of this reuqest.  the key should be provided encrypted and encoded once for each entity mentioned in the 'aud' property, and in the same order as the 'aud' property"
+        },
+        "_opaque": {
+            "type": "string",
+            "description": "symmetric session key encrypted base64url encoded block of JSON to be evaluated as if it were interposed literally after the previous entry and before the next entry in the current lexical scope"
+        },
+    },
+    "required": ["iss", "jti", "iat", "exp", "sub", "aud", "access", "resources"]
+}

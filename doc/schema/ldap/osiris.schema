@@ -1,0 +1,24 @@
+# OSiRIS LDAP Schema Extensions
+# based on the mg2.org OID namespace 1.3.5.1.3.1.17128
+# sliced off .313 for OSiRIS attributes
+
+# Attributes
+attributeType ( 1.3.5.1.3.1.17128.313.1.1
+    NAME 'osirisKeyThumbprint',
+    DESC 'a Base64-URL encoded SHA256 hash of a DER encoded certificate'
+    EQUALITY caseExactMatch
+    SINGLE_VALUE
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 )
+
+# Object Classes
+objectClass ( 1.3.5.1.3.1.17128.313.1 
+    NAME 'osirisEntity' SUP top AUXILIARY 
+    MAY ( osirisKeyThumbprint ) )
+
+objectClass ( 1.3.5.1.3.1.17128.313.2 
+    NAME 'osirisResourceProvider' SUP top AUXILIARY 
+    MUST ( osirisKeyThumbprint ) )
+
+objectClass ( 1.3.5.1.3.1.17128.313.3 
+    NAME 'osirisCentralAuthority' SUP top AUXILIARY 
+    MUST ( osirisKeyThumbprint ) )
