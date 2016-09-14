@@ -19,8 +19,32 @@ package OSiRIS::AccessAssertion::Certificate;
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+use Mojo::Util qw/slurp b64_decode/;
 use Mojo::Base 'Crypt::X509';
 use Crypt::PK::RSA;
+
+# give it an interface like the Crypt::PK modules but still work the old way, too...
+sub new {
+    my ($class, @opts) = @_;
+    if (scalar(@opts) == 2 && $opts[0] eq "cert") {
+        # default option, default behavior, passing 'cert' as the key in a key value
+        # pair with the DER encoded certificate as the value.
+        return Crypt::X509::new($class, @opts);
+    } else {
+        # if we just got passed one argument, let's act like Crypt::PK a bit more and 
+        # load the certificate PEM encoded from a file or instantiate from a scalar ref
+        if (scalar(@opts) == 1) {
+            my ($file, $x509_string) = (@opts);
+
+            if (ref $file eq "SCALAR") {
+                $x509_string = $$file;
+            } elsif (-e $file) {
+                $x509_string = slurp $file;
+            }
+            return Crypt::X509::new($class, cert => b64_decode(_unharness($x509_string)));
+        }
+    }
+}
 
 sub pubkey {
     my ($self) = @_;
@@ -31,5 +55,19 @@ sub pubkey {
     return $pk_obj;
 }
 
+sub to_jwk {
+    shift->pubkey->export_key_jwk('public');    
+}
+
+sub thumbprint {
+    shift->pubkey->export_key_jwk_thumbprint('SHA256');
+}
+
+sub _unharness {
+    my ($pem) = @_;
+    my $unpem = join('', split("\n", $pem));
+    $unpem =~ s/^-----[^-]+-----([^-]+).+$/$1/g;
+    return $unpem;
+}
 
 1;

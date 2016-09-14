@@ -67,7 +67,7 @@ our %EXPORT_TAGS = (
     all => [@EXPORT_OK],
     crypto => [qw/
         new_crypto_stream_key new_crypto_stream_nonce crypto_stream_xor gen_rsa_keys gen_self_signed_rsa_pair
-        load_rsa_pair load_rsa_key load_rsa_cert
+        load_rsa_pair load_rsa_key load_rsa_cert harness unharness armor unarmor
     /],
     encoding => [qw/
         to_json from_json encode_json decode_json encode decode b64_encode b64_decode a85_encode a85_decode
@@ -89,6 +89,7 @@ my @OPENSSL_DEFAULTS = (
 );
 
 # Aliases
+monkey_patch(__PACKAGE__, 'unharness', \&OSiRIS::AccessAssertion::Certificate::_unharness);
 monkey_patch(__PACKAGE__, 'b64u_encode', \&encode_base64url);
 monkey_patch(__PACKAGE__, 'b64u_decode', \&decode_base64url);
 monkey_patch(__PACKAGE__, 'armor', \&harness);
@@ -181,7 +182,7 @@ sub load_rsa_cert {
     my ($cert_file) = @_;
     if (-e $cert_file) {
         my $cert_text = unharness(slurp($cert_file));
-        return OSiRIS::AccessAssertion::Certificate->new( cert => b64_decode( $cert_text) );
+        return OSiRIS::AccessAssertion::Certificate->new( cert => b64_decode( $cert_text ) );
     }
 
     return undef;
@@ -302,13 +303,6 @@ sub harness {
     push(@pem, "-----END $type-----");
 
     return join("\n", @pem);
-}
-
-sub unharness {
-    my ($pem) = @_;
-    my $unpem = join('', split("\n", $pem));
-    $unpem =~ s/^-----[^-]+-----([^-]+).+$/$1/g;
-    return $unpem;
 }
 
 1;
