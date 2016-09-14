@@ -19,8 +19,17 @@ package OSiRIS::AccessAssertion::Certificate;
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-use Crypt::X509;
+use Mojo::Base 'Crypt::X509';
 use Crypt::PK::RSA;
+
+sub pubkey {
+    my ($self) = @_;
+    my $pk_obj;
+    unless ($pk_obj = $self->{_pk_object}) {
+        $pk_obj = $self->{_pk_object} = Crypt::PK::RSA->new(\Crypt::X509::pubkey($self));
+    }
+    return $pk_obj;
+}
 
 
 1;

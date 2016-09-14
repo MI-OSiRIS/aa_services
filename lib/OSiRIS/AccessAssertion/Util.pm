@@ -34,7 +34,7 @@ use Mojo::Base 'Mojo::Util';
 use Mojo::Util @Mojo::Util::EXPORT_OK;
 use Mojo::JSON qw/to_json from_json encode_json decode_json/;
 
-use Crypt::X509;
+use OSiRIS::AccessAssertion::Certificate;
 use Crypt::PK::RSA;
 use Crypt::Digest qw/digest_data digest_data_hex digest_file digest_file_hex/;
 use Crypt::Sodium;
@@ -49,17 +49,33 @@ our @EXPORT_OK = (
     @Mojo::Util::EXPORT_OK,
     # crypto functions
     qw/
-        new_crypto_stream_key crypto_stream_xor gen_rsa_keys
+        new_crypto_stream_key new_crypto_stream_nonce crypto_stream_xor gen_rsa_keys gen_self_signed_rsa_pair
+        load_rsa_pair load_rsa_key load_rsa_cert
     /,
     # encoding functions
     qw/
-        a85_encode a85_decode b64u_encode b64u_decode harness unharness armor unarmor
+        a85_encode a85_decode b64u_encode b64u_decode harness unharness armor unarmor to_json from_json encode_json 
+        decode_json
     /,
     # random string generators
     qw/
         random_bytes random_hex random_a85 random_b64 random_b64u
     /,
-)
+);
+
+our %EXPORT_TAGS = (
+    all => [@EXPORT_OK],
+    crypto => [qw/
+        new_crypto_stream_key new_crypto_stream_nonce crypto_stream_xor gen_rsa_keys gen_self_signed_rsa_pair
+        load_rsa_pair load_rsa_key load_rsa_cert
+    /],
+    encoding => [qw/
+        to_json from_json encode_json decode_json encode decode b64_encode b64_decode a85_encode a85_decode
+        b64u_encode b64u_decode harness unharness armor unarmor
+    /],
+    random => [qw/random_bytes random_hex random_a85 random_b64 random_b64u/],
+    mojo => [@Mojo::Util::EXPORT_OK],
+);
 
 my @OPENSSL_DEFAULTS = (
     country => "US",
@@ -81,15 +97,32 @@ monkey_patch(__PACKAGE__, 'gen_rsa_keys', \&gen_self_signed_rsa_pair);
 
 sub opaque_block {
     my ($hr, $key) = @_;
-    return b64u_encode(crypto_stream_xor())
+    return b64u_encode(crypto_stream_xor());
 }
 
 sub gen_self_signed_rsa_pair {
     my ($user_config, $key_file, $cert_file) = @_;
-    my $config = {
-        @OPENSSL_DEFAULTS,
-        each %$user_config
-    };
+
+    my ($force, $config);
+    if (ref $user_config eq "HASH") {
+        $force = delete $user_config->{force};
+        $config = {
+            @OPENSSL_DEFAULTS,
+
+            # allow their settings to override defaults
+            %$user_config
+        };
+    } else {
+        $config = { @OPENSSL_DEFAULTS };
+    }
+
+    if (-e $key_file && !$force) {
+        croak "[fatal] $key_file exists, please remove before calling gen_self_signed_rsa_pair or pass force => 1 in options\n";
+    }
+
+    if (-e $cert_file && !$force) {
+        croak "[fatal] $cert_file exists, please remove before calling gen_self_signed_rsa_pair or pass force => 1 in options\n";
+    }
 
     unless (exists $config->{common_name} && $config->{common_name}) {
         $config->{common_name} = "urn:uuid:" . new_uuid();
@@ -108,8 +141,50 @@ sub gen_self_signed_rsa_pair {
     print $ossl_cfg "O=$config->{organization}\n";
     print $ossl_cfg "OU=$config->{organizational_unit}\n";
     print $ossl_cfg "CN=$config->{common_name}\n";
-    print $ossl_cfg "emailAddress=$config->{administrator_email}\n";
+    print $ossl_cfg "emailAddress=$config->{email_address}\n";
     close $ossl_cfg;
+
+    system("openssl genrsa -out $key_file $config->{bits} >/dev/null 2>&1");
+    system("openssl req -new -x509 -key $key_file -out $cert_file -days $config->{days} -sha256 -config /tmp/osiris_openssl_config.$$.conf >/dev/null 2>&1");
+
+    unlink("/tmp/osiris_openssl_config.$$.conf") if -e "/tmp/osiris_openssl_config.$$.conf";
+
+    return load_rsa_pair($key_file, $cert_file);
+}
+
+sub load_rsa_pair {
+    my ($key_file, $cert_file) = @_;
+    if (-e $key_file && -e $cert_file) {
+        my $key_text = slurp($key_file);
+        my $sk = Crypt::PK::RSA->new(\$key_text);
+
+        my $cert_text = unharness(slurp($cert_file));
+        my $x509 = OSiRIS::AccessAssertion::Certificate->new( cert => b64_decode( $cert_text) );
+
+        return ($sk, $x509);
+    }
+
+    return undef;
+}
+
+sub load_rsa_key {
+    my ($key_file) = @_;
+    if (-e $key_file) {
+        my $key_text = slurp($key_file);
+        return Crypt::PK::RSA->new(\$key_text);
+    }
+
+    return undef;
+}
+
+sub load_rsa_cert {
+    my ($cert_file) = @_;
+    if (-e $cert_file) {
+        my $cert_text = unharness(slurp($cert_file));
+        return OSiRIS::AccessAssertion::Certificate->new( cert => b64_decode( $cert_text) );
+    }
+
+    return undef;
 }
 
 sub new_uuid {
@@ -129,12 +204,12 @@ sub random_hex {
 
 sub random_a85 {
     my ($length) = @_;
-    return substr(encode_a85(random_bytes($length)), 0, $length // 32);
+    return substr(a85_encode(random_bytes($length)), 0, $length // 32);
 }
 
 sub random_b64 {
     my ($length) = @_;
-    return substr(encode_base64(random_bytes($length), ''), 0, $length // 32);
+    return substr(b64_encode(random_bytes($length), ""), 0, $length // 32);
 }
 
 sub random_b64u {
@@ -142,8 +217,12 @@ sub random_b64u {
     return substr(encode_base64url(random_bytes($length), ''), 0, $length // 32);
 }
 
+sub new_crypto_stream_nonce {
+    return randombytes_buf(crypto_stream_NONCEBYTES);
+}
+
 sub new_crypto_stream_key {
-    return encode_a85(randombytes_buf(crypto_stream_KEYBYTES), '');
+    return randombytes_buf(crypto_stream_KEYBYTES);
 }
 
 sub a85_encode {

@@ -54,8 +54,7 @@ objectClass ( 1.3.5.1.3.1.17128.313.3
     // session key encrypted with each resource provider's public key
     // provided in the same order they are listed in 'aud', any sensitive
     // data will be encrypted with this symmetric session key using
-    // crypto_stream_xor, with the nonce being the first 
-    // crypto_stream_NONCEBYTES of the sha256 hash of the "jti" string
+    // crypto_stream_xor
     "sk": [
         "vr77Lv31xJXQPR0pNA63JC4",
         "/02ZGeOePwriwiO6F3r4eok"
@@ -64,11 +63,11 @@ objectClass ( 1.3.5.1.3.1.17128.313.3
     // at any level an "_opaque" property may occur.  it is to be base64url
     // decoded, and decrypted with the session key, and its properties are 
     // to be merged into the resulting object structure in the place where
-    // it is found, for example
+    // it is found 
+    // note: the first 24 bytes after decoding are the nonce.
+    // for example:
 
-    "_opaque": {
-        "nonce": 
-    }
+    "_opaque": "zOkEBma9l/8xx8bkH2CE5LAXpq75tguJfVSRYH9tZ3I6vn9OJAnCLoh0ehF",
 
     // an array of access we're requesting.  order corresponds to the
     // 'resources' array below, here we request 'read' access to ceph

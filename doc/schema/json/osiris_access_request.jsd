@@ -42,7 +42,7 @@
         },
         "_opaque": {
             "type": "string",
-            "description": "symmetric session key encrypted base64url encoded block of JSON to be evaluated as if it were interposed literally after the previous entry and before the next entry in the current lexical scope"
+            "description": "symmetric session key encrypted base64url encoded block of JSON to be evaluated as if it were interposed literally after the previous entry and before the next entry in the current lexical scope.  The first 24 bytes are the nonce."
         },
     },
     "required": ["iss", "jti", "iat", "exp", "sub", "aud", "access", "resources"]
