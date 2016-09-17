@@ -50,7 +50,7 @@ our @EXPORT_OK = (
     # crypto functions
     qw/
         new_crypto_stream_key new_crypto_stream_nonce crypto_stream_xor gen_rsa_keys gen_self_signed_rsa_pair
-        load_rsa_pair load_rsa_key load_rsa_cert
+        load_rsa_pair load_rsa_key load_rsa_cert digest_data digest_data_hex digest_file digest_file_hex
     /,
     # encoding functions
     qw/
@@ -90,6 +90,7 @@ my @OPENSSL_DEFAULTS = (
 
 # Aliases
 monkey_patch(__PACKAGE__, 'unharness', \&OSiRIS::AccessAssertion::Certificate::_unharness);
+monkey_patch(__PACKAGE__, 'harness', \&OSiRIS::AccessAssertion::Certificate::_harness);
 monkey_patch(__PACKAGE__, 'b64u_encode', \&encode_base64url);
 monkey_patch(__PACKAGE__, 'b64u_decode', \&decode_base64url);
 monkey_patch(__PACKAGE__, 'armor', \&harness);
@@ -286,23 +287,6 @@ sub a85_decode {
     }
 
     substr $out, 0, length($out) - $padding
-}
-
-sub harness {
-    my ($b64, $type) = @_;
-    return undef unless $type;
-
-    # just make sure it's upper case
-    $type = uc($type);
-
-    my ($pos, @pem) = (0, "-----BEGIN $type-----");
-    while (my $string = substr($b64, $pos, 64)) {
-        push(@pem, $string);
-        $pos += 64;
-    }
-    push(@pem, "-----END $type-----");
-
-    return join("\n", @pem);
 }
 
 1;

@@ -19,7 +19,7 @@ package OSiRIS::AccessAssertion::Certificate;
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-use Mojo::Util qw/slurp b64_decode/;
+use Mojo::Util qw/slurp b64_decode b64u_decode monkey_patch/;
 use Mojo::Base 'Crypt::X509';
 use Crypt::PK::RSA;
 
@@ -29,7 +29,12 @@ sub new {
     if (scalar(@opts) == 2 && $opts[0] eq "cert") {
         # default option, default behavior, passing 'cert' as the key in a key value
         # pair with the DER encoded certificate as the value.
-        return Crypt::X509::new($class, @opts);
+        my $self = Crypt::X509::new($class, @opts);
+
+        # stash this away
+        $self->{_der_encoded} = $opts[1];
+
+        return $self;
     } else {
         # if we just got passed one argument, let's act like Crypt::PK a bit more and 
         # load the certificate PEM encoded from a file or instantiate from a scalar ref
@@ -41,9 +46,23 @@ sub new {
             } elsif (-e $file) {
                 $x509_string = slurp $file;
             }
-            return Crypt::X509::new($class, cert => b64_decode(_unharness($x509_string)));
+
+            my $der = b64_decode(_unharness($x509_string));
+            my $self = Crypt::X509::new($class, cert => $der);
+            $self->{_der_encoded} = $der;
+            return $self;
         }
     }
+    
+    return undef;
+}
+
+# Aliases
+monkey_patch(__PACKAGE__, 'pk', \&pubkey);
+
+sub verify {
+    my ($self, $sig, $msg) = @_;
+    return $self->pk->verify_message(b64u_decode($sig), $to_verify, 'SHA256', 'v1.5');
 }
 
 sub pubkey {
@@ -61,6 +80,33 @@ sub to_jwk {
 
 sub thumbprint {
     shift->pubkey->export_key_jwk_thumbprint('SHA256');
+}
+
+sub to_pem {
+    my ($self) = @_;
+    return _harness(b64_encode($self->{_der_encoded}, ''), "CERTIFICATE");
+}
+
+sub to_der {
+    my ($self) = @_;
+    return $self->{_der_encoded};
+}
+
+sub _harness {
+    my ($b64, $type) = @_;
+    return undef unless $type;
+
+    # just make sure it's upper case
+    $type = uc($type);
+
+    my ($pos, @pem) = (0, "-----BEGIN $type-----");
+    while (my $string = substr($b64, $pos, 64)) {
+        push(@pem, $string);
+        $pos += 64;
+    }
+    push(@pem, "-----END $type-----");
+
+    return join("\n", @pem);
 }
 
 sub _unharness {

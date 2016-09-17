@@ -1,9 +1,6 @@
-package OSiRIS::AccessAssertion::Key;
+package OSiRIS::Config;
 
-# Class that encapsulates an RSA key used for creating OSiRIS Access 
-# Assertions
-#
-# Authored by: Michael Gregorowicz
+# Object for parsing config files
 #
 # Copyright 2016 Wayne State University
 #
@@ -19,12 +16,23 @@ package OSiRIS::AccessAssertion::Key;
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-use Mojo::Base 'Crypt::PK::RSA';
-use OSiRIS::AccessAssertion::Util qw/b64u_decode b64u_encode encode_json digest_data/;
+use OSiRIS::AccessAssertion::Util qw/slurp/;
 
-sub sign {
-    my ($self, $msg) = @_;
-    return b64u_encode($self->sign_message($msg, 'SHA256', 'v1.5'), '');
+sub parse {
+    my ($self, $file) = @_;
+
+    my $content = slurp $file;
+
+    # Run Perl code in sandbox
+    my $config = eval 'package OSiRIS::Config::Sandbox; no warnings;'
+        . "use Mojo::Base -strict; $content";
+
+    die qq{Can't load configuration from file "$file": $@} if $@;
+
+    die qq{Configuration file "$file" did not return a hash reference.\n}
+    unless ref $config eq 'HASH';
+
+    return $config;
 }
 
 1;

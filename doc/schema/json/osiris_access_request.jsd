@@ -30,6 +30,10 @@
             "type": ["string", "array"],
             "description": "the resource provider or providers (audience) this request is made to"
         },
+        "type": {
+            "type": "string",
+            "description": "the type of OA this is, in this case the value should always be OAR",
+        },
         "access": {
             "type": "array",
         },

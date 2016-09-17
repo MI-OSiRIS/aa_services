@@ -43,41 +43,68 @@ ultra fast resources?!  That'd be awesome.
 =cut
 
 use Mojo::Base -base;
-use Mojo::Util qw/trim/;
-use MIME::Base64 qw/encode_base64url decode_base64url/;
-use Crypt::Digest qw/digest_data digest_data_hex/;
-use Crypt::X509;
-use Crypt::PK::RSA;
+use Carp qw/croak confess/;
+use FindBin;
+use JSON::Validator;
+use OSiRIS::Config;
+use OSiRIS::AccessAssertion::Certificate;
+use OSiRIS::AccessAssertion::Key;
+use OSiRIS::AccessAssertion::Util qw/b64u_decode b64u_encode encode_json digest_data/;
 
-# define our signature and validation configurations
-has crypto => sub { 
+# these are the types of assertions we can possibly be
+has VALID_TYPES => sub {
     return {
-        'RS256' => {
-            sign => sub {
-                my ($sk, $to_sign) = @_;
-                return encode_base64url($sk->sign_message($to_sign, 'SHA256', 'v1.5'), '');
-            },
-            verify => sub {
-                my ($pk, $sig, $to_verify) = @_;
-                return $pk->verify_message(decode_base64url($sig), $to_verify, 'SHA256', 'v1.5');
-            }
-        },
-    };
+        OAR => 'doc/schema/json/osiris_access_request.jsd',
+        OAG => 'doc/schema/json/osiris_access_grant.jsd',
+        OAA => 'doc/schema/json/osiris_access_assertion.jsd',
+        OAT => 'doc/schema/json/osiris_access_token.jsd',
+        ORT => 'doc/schema/json/osiris_refresh_token.jsd',
+    }
 };
 
-=item new($target, $access, $sk) [B<constructor>]
+# load the config
+has config => sub {
+    my $config;
+    if ($FindBin::RealBin =~ /(oakd|stpd)/) {
+        $config = OSiRIS::Config->parse("$FindBin::RealBin/../../etc/aa_services.conf");
+        while (my($k, $v) = each %{OSiRIS::Config->parse("$FindBin::RealBin../etc/$1.conf")} {
+            # overlay the sub-service's config on top of the base config
+            $config->{$k} = $v;
+        }
+    } else {
+        # assume the script was in the bin/ or script/ base directory
+        $config = OSiRIS::Config->parse("$FindBin::RealBin/../etc/aa_services.conf");   
+    }
+
+    return $config;
+}
+
+=item new(%opts) [B<constructor>]
 
 =over 2
 
-=item Arguments:
+=item Options:
 
 =over 2
 
-=item * B<$access> - hashref to be json-ified, and signed.  as of right now it can be any set of values your application 
+=item * B<access> - hashref to be json-ified, and signed.  as of right now it can be any set of values your application 
 requires, stuff like who to grant access to, and what access to grant, maybe a not_before, not_after clause, and throw
 an ID in for good measure.
 
-=item * B<$sk> - secret (private) key in DER format.
+=item * B<target> - thumbprint of the target
+
+=item * B<cert> - OSiRIS::AccessAssertion::Certificate object of the corresponding certificate.
+
+=item * B<sk> - OSiRIS::AccessAssertion::Key object for the corresponding secret key.
+
+=item * B<type> - A string, representing the type of AccessAssertion this is, needs to be one of OAR, OAG, OAA, OAT, or 
+ORT
+
+=item * B<access> - A hashref representing the Access this assertion, must pass schema validation of the B<type> of 
+assertion specified
+
+=item * B<skip_initial_schema_check> - If true, the schema of <access> is not checked at object construction and only
+at the JWT generation / sign time.
 
 =back
 
@@ -88,9 +115,26 @@ an ID in for good measure.
 =cut
 
 sub new {
-    my ($access, $sk) = @_;
+    my ($class, %opts) = @_;
 
 
+}
+
+sub json_validator {
+    my ($self) = @_;
+    $self->{validator} = JSON::Validator->new() unless $self->{validator};
+    $self->{validator}->schema($self->VALID_TYPES->{$self->{type}}) if exists self->VALID_TYPES->{$self->{type}};
+    return $self->{validator};
+}
+
+sub type {
+    my ($self, $type) = @_;
+    if (exists($self->VALID_TYPES->{uc($type)})) {
+        $self->{type} = uc($type);
+    } else {
+        confess "[error] Invalid Assertion Type provided: $type, leaving type set to $self->{type}\n";
+    }
+    return $self->{type};
 }
 
 =item verify($jwt_string, $cert) [B<constructor>]
@@ -127,9 +171,7 @@ sub verify {
 
 =over 2 
 
-=item * B<$sk> - to_string is what actually does the signing, so if you didn't create this OAA with new() and/or
-want to re-sign an existing one with a new key, you B<MAY> pass one in as an argument.  otherwise B<to_string> will
-use the key you specified when you called new() to sign and generate the JWT.
+=item * B<$sk> - serializes and signs this Assertion 
 
 =back
 
@@ -139,7 +181,7 @@ use the key you specified when you called new() to sign and generate the JWT.
 
 =cut
 
-sub to_string {
+sub to_jwt {
     my ($self) = @_;
 
     # default to an empty hashref
@@ -147,7 +189,7 @@ sub to_string {
 
     my $header = encode_base64url(encode_json({
         alg => 'RS256',
-        x5t => encode_base64url(digest_data('SHA256', b64_decode($self->config->{pem_string}))),
+        x5t => encode_base64url(digest_data('SHA256', $cert->to_der)),
         x5u => $self->config->{front_door_url} . '/oaa/pubkey.pem',
     }), '');
 
