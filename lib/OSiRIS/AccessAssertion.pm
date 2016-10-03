@@ -42,14 +42,70 @@ ultra fast resources?!  That'd be awesome.
 
 =cut
 
-use Mojo::Base -base;
+
 use Carp qw/croak confess/;
-use FindBin;
 use JSON::Validator;
-use OSiRIS::Config;
-use OSiRIS::AccessAssertion::Certificate;
-use OSiRIS::AccessAssertion::Key;
-use OSiRIS::AccessAssertion::Util qw/b64u_decode b64u_encode encode_json digest_data/;
+
+our $sk_pem, $cert_pem, $sk, $cert, $config;
+
+BEGIN { 
+    use Mojo::Base -base;
+    use OSiRIS::Config;
+    use OSiRIS::AccessAssertion::Certificate;
+    use OSiRIS::AccessAssertion::Key;
+    use OSiRIS::AccessAssertion::Util qw/b64u_decode b64u_encode encode_json digest_data gen_rsa_pair slurp/;
+
+    unless ($ENV{AA_HOME}) {
+        warn "[error] AA_HOME environment variable undefined, defaulting to /opt/osiris/aa_services\n";
+        $ENV{AA_HOME} = "/opt/osiris/aa_services";
+    }
+
+    # define the configuration loader
+    has config => sub {
+        unless ($config) {
+            $config = OSiRIS::Config->parse("$ENV{AA_HOME}/etc/aa_services.conf");
+        }
+        return $config;
+    }
+
+    my $keys_folder = "$ENV{AA_HOME}/etc/keys";
+    $sk_pem = slurp "$keys_folder/rsa.key";
+    $cert_pem = slurp "$keys_folder/rsa.crt";
+    
+    # if we still don't have them.. generate them.
+    unless ($sk_pem && $cert_pem) {
+        # Configure OpenSSL...
+        my $c = __PACKAGE__::config();
+        my $key_config = {};
+        foreach my $opt (qw/ country state locality organization organizational_unit email_address/) {
+            if (exists $c->{$opt} && $c->{$opt}) {
+                $key_config->{$opt} = $c->{$opt};
+            }
+        }
+
+        if (exists $c->{rsa_key_size} && $c->{rsa_key_size}) {
+            $key_config->{bits} = $c->{rsa_key_size};
+        }
+
+        if (exists $c->{rsa_cert_validity} && $c->{rsa_cert_validity}) {
+            $key_config->{days} = $c->{rsa_cert_validity};
+        }
+
+        # Generate the keys and certificate, save them where we think they need to go...
+        gen_rsa_keys($key_config, "$keys_folder/rsa.key", "$keys_folder/rsa.crt");
+
+        # load them up
+        $sk_pem = slurp "$keys_folder/rsa.key";
+        $cert_pem = slurp "$keys_folder/rsa.crt";
+    }
+
+    # instantiate objects from the pems..
+    $sk = OSiRIS::AccessAssertion::Key->new(\$sk_pem);
+    $cert = OSiRIS::AccessAssertion::Certificate->new(\$cert_pem);
+}
+
+has rsa_key => sub { return $sk };
+has rsa_cert => sub { return $cert };
 
 # these are the types of assertions we can possibly be
 has VALID_TYPES => sub {
@@ -62,22 +118,8 @@ has VALID_TYPES => sub {
     }
 };
 
-# load the config
-has config => sub {
-    my $config;
-    if ($FindBin::RealBin =~ /(oakd|stpd)/) {
-        $config = OSiRIS::Config->parse("$FindBin::RealBin/../../etc/aa_services.conf");
-        while (my($k, $v) = each %{OSiRIS::Config->parse("$FindBin::RealBin../etc/$1.conf")} {
-            # overlay the sub-service's config on top of the base config
-            $config->{$k} = $v;
-        }
-    } else {
-        # assume the script was in the bin/ or script/ base directory
-        $config = OSiRIS::Config->parse("$FindBin::RealBin/../etc/aa_services.conf");   
-    }
-
-    return $config;
-}
+# simple accessor/mutator methods
+has ['type', 'access', 'target'];
 
 =item new(%opts) [B<constructor>]
 
@@ -91,11 +133,7 @@ has config => sub {
 requires, stuff like who to grant access to, and what access to grant, maybe a not_before, not_after clause, and throw
 an ID in for good measure.
 
-=item * B<target> - thumbprint of the target
-
-=item * B<cert> - OSiRIS::AccessAssertion::Certificate object of the corresponding certificate.
-
-=item * B<sk> - OSiRIS::AccessAssertion::Key object for the corresponding secret key.
+=item * B<target> - thumbprint of the Central Authority or Resource Authority target
 
 =item * B<type> - A string, representing the type of AccessAssertion this is, needs to be one of OAR, OAG, OAA, OAT, or 
 ORT
@@ -117,7 +155,19 @@ at the JWT generation / sign time.
 sub new {
     my ($class, %opts) = @_;
 
+    my $self = bless (\%opts, $class);
 
+    unless (exists $self->{type} && exists $self->VALID_TYPES->{uc($self->{type})}) {
+        croak "Invalid Access Assertion type specified; 'type' must be one of @{[join ', ', keys %{$self->VALID_TYPES}]}\n";
+    }
+
+    # keep the data clean
+    $self->{type} = uc($self->{type});
+
+    # if a target audience is specified, let's make sure we know who they are...
+    if (exists $self->{target} && $self->{target}) {
+
+    }
 }
 
 sub json_validator {

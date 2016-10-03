@@ -1,1 +1,4 @@
 etc/*.conf
+var/*
+!.gitkeep
+!var/.gitkeep
