@@ -50,6 +50,7 @@ our $sk_pem, $cert_pem, $sk, $cert, $config;
 
 BEGIN { 
     use Mojo::Base -base;
+    use Mojo::Log;
     use OSiRIS::Config;
     use OSiRIS::AccessAssertion::Certificate;
     use OSiRIS::AccessAssertion::Key;
@@ -104,6 +105,7 @@ BEGIN {
     $cert = OSiRIS::AccessAssertion::Certificate->new(\$cert_pem);
 }
 
+has log => sub { return Mojo::Log->new(path => "$ENV{AA_HOME}/var/log/aa_services.log", level => 'warn') };
 has rsa_key => sub { return $sk };
 has rsa_cert => sub { return $cert };
 

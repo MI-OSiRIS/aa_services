@@ -1,11 +1,14 @@
 package OSiRIS::AccessAsssertion::Target;
 use Mojo::Base -base;
 use Mojo::UserAgent;
+use Mojo::Collection;
 use Mojo::URL;
 use Data::Dumper;
 use OSiRIS::AccessAssertion::Certificate;
 use OSiRIS::AccessAsssertion::Util qw/slurp spurt unarmor/;
 use Carp qw/croak/;
+
+my $known_targets = {};
 
 has target_dir => sub {
     return "$ENV{AA_HOME}/var/known_targets";
@@ -47,6 +50,39 @@ sub new {
 
     $self->save;
     return $self;
+}
+
+# returns a Mojo::Collection of all known targets
+sub all_known_targets {
+    my $kt_dir = "$ENV{AA_HOME}/var/known_targets";
+
+    unless (-d $kt_dir) {
+        system("mkdir -p $kt_dir");
+    }
+
+    opendir my $dir, $kt_dir or $self->app->log->error("error: can't open directory $kt_dir") && return undef;
+
+    my $c = Mojo::Collection->new;
+    while (my $file = readdir($dir)) {
+        next if $file =~ /^\./;
+        if (my $target = $known_targets->{"$kt_dir/$file"}) {
+            # cached...
+            push(@$c, $target->{_config}); 
+        } else {
+            # gotta load..
+            my $loaded_target = {
+                _config => load("$kt_dir/$file"),
+                _load_time => time,
+            };
+        
+            # cache
+            $known_targets->{"$kt_dir/$file"} = $known_targets->{$loaded_target}->{_config}->{entity_id}} = $loaded_target;
+        
+            push(@$c, $loaded_target->{_config});
+        }
+    }
+
+    return $c;
 }
 
 sub find {

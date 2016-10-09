@@ -1,16 +1,36 @@
 # OSiRIS Access Assertions
 
-## Assertion Types
-* _OSiRIS Access Request (OAR)_ - Issued by _Central Authority_ `oakd` to one or more _Resource Authorities_ `stpd` to provision services and receive an...
-* _OSiRIS Access Grant (OAG)_ - Issued by _Resource Authorities_ `stpd` to the _Central Authority_ `oakd` to be included in an...
-* _OSiRIS Access Assertion (OAA)_ - To be stored by _Central Authority_ `oakd` and delivered to user agents as part of an..
-* _OSiRIS Access Token (OAT)_ (short lived, hours/days/weeks) and / or an _OSiRIS Refresh Token (ORT)_ (longer-lived, months/years) which are stored on client machines and are used as bearer tokens to gain access to resources
+## Glossary
+
+* Central Authority - A Service that:
+ * Maintains a database of registered _Resource Providers_
+ * Interfaces with identity providers to authenticate _Resource Users_
+ * Facilitates matchmaking / pairing up of _Resource Users_ with _Resource Providers_
+ * Allows the formation of roles and groups for convenience 
+ * Facilitates the safe keeping of Access Assertions (OAAs) long term
+* Resource User - An individual or group of individuals that wants to have or currently has access to a resource pvoided by a _Resource Provider_
+* Resource Provider - A system capable of providing certain types of services to _Resource User_s. 
+
+* OSiRIS Token Types
+ * _OSiRIS Access Request (OAR)_ - Issued by _Central Authority_ `oakd` to one or more _Resource Authorities_ `stpd` to provision services and receive an...
+ * _OSiRIS Access Grant (OAG)_ - Issued by _Resource Authorities_ `stpd` to the _Central Authority_ `oakd` to be included in an...
+ * _OSiRIS Access Assertion (OAA)_ - To be stored by _Central Authority_ `oakd` and delivered to user agents as part of an..
+ * _OSiRIS Access Token (OAT)_ (short lived, hours/days/weeks) and / or an _OSiRIS Refresh Token (ORT)_ (longer-lived, months/years) which are stored on client machines and are used as bearer tokens to gain access to resources
+
+## Novel benefits of the OAA approach
+
+* Allows for the eventual removal of a central authority (some kind of auction service or matchmaking service may be required, but a variety of these may exist)
+* Resource providers may set their own terms for resources allocated by them
+* Allows codification of many different types of access
+* Doesn't require a RDBMs or complicated database schema to know who is who, and who gets access to what.  Everything any participating system or user needs to know is codified within the bearer token and accessible only by the parties that have the encryption keys for the fragments.
 
 ## Authority Types
 
+* _Identity Authority_ - A traditional SAML2, OpenID Connect, CAS, or to-be-created assertion generating authority for a given entity.
+
 * _Central Authority_ - e.g. OSiRIS `oakd`, trusts InCommon and other IdPs, handles Authentication and authorization for the OSiRIS enterprise itself, and performs some AuthZ.  If `oakd` issues an 
 
-* _Resource Authorities_ - e.g. OSiRIS `stpd`, has certificates and will sign tokens issued by _Identity Authorities_ if certain criteria are met.  This gives resource owners a bit of their own AuthZ power and might come in handy.  This also introduces a point in the OAA issuance flow for provisioning of resources themselves.  Even if access keys are ephemeral, the resources themselves (UNIX Accounts, sudo rights, filesystems, namespaces, and block devices) are not.
+* _Resource Authorities/Providers_ - e.g. OSiRIS `stpd`, has certificates and will sign tokens issued by _Identity Authorities_ if certain criteria are met.  This gives resource owners a bit of their own AuthZ power and might come in handy.  This also introduces a point in the OAA issuance flow for provisioning of resources themselves.  Even if access keys are ephemeral, the resources themselves (UNIX Accounts, sudo rights, filesystems, namespaces, and block devices) are not.
 
 ## LDAP Schema (utilize oid urns below)
 
