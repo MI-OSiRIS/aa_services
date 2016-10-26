@@ -25,7 +25,7 @@ my $n1 = new_crypto_stream_nonce();
 my $ciphertext = crypto_stream_xor($secret, $n1, $k1);
 ok(crypto_stream_xor($ciphertext, $n1, $k1) eq $secret, "round trip crypto_stream_xor");
 
-my ($rsa_sk, $rsa_cert) = gen_rsa_keys({
+my ($key_file, $cert_file) = gen_rsa_keys({
     country => "US",
     state => "Michigan",
     locality => "Hell", # hey, it's a place
@@ -37,12 +37,10 @@ my ($rsa_sk, $rsa_cert) = gen_rsa_keys({
     force => 1,
 }, '/tmp/test.key', '/tmp/test.crt');
 
-ok($rsa_cert->subject_locality eq "Hell", "check that the cert has the right (non-default) locality");
+use_ok("OSiRIS::AccessAssertion::Certificate");
 
-$rsa_cert = load_rsa_cert("/tmp/test.crt");
-
-ok($rsa_cert->subject_ou eq "MI-OSiRIS", "checking load_rsa_cert");
-ok(ref $rsa_cert->pubkey eq "Crypt::PK::RSA", "checking pubkey method override");
+my $rsa_cert = OSiRIS::AccessAssertion::Certificate->new($cert_file);
+ok($rsa_cert->subject_locality eq "Hell", "sanity checking gen_rsa_keys");
 
 unlink('/tmp/test.key');
 unlink('/tmp/test.crt');

@@ -19,9 +19,11 @@ package OSiRIS::AccessAssertion::Certificate;
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-use Mojo::Util qw/slurp b64_decode b64u_decode monkey_patch/;
+use OSiRIS::AccessAssertion::Util qw/slurp b64_decode b64u_decode b64u_encode monkey_patch/;
 use Mojo::Base 'Crypt::X509';
 use Crypt::PK::RSA;
+use Carp 'croak';
+use Exporter 'import';
 
 # give it an interface like the Crypt::PK modules but still work the old way, too...
 sub new {
@@ -59,10 +61,65 @@ sub new {
 
 # Aliases
 monkey_patch(__PACKAGE__, 'pk', \&pubkey);
+monkey_patch(__PACKAGE__, 'harness', \&_harness);
+monkey_patch(__PACKAGE__, 'unharness', \&_unharness);
+monkey_patch(__PACKAGE__, 'armor', \&harness);
+monkey_patch(__PACKAGE__, 'unarmor', \&unharness);
 
-sub verify {
-    my ($self, $sig, $msg) = @_;
-    return $self->pk->verify_message(b64u_decode($sig), $to_verify, 'SHA256', 'v1.5');
+our @EXPORT_OK = (
+    qw/harness unharness armor unarmor/,
+);
+
+
+sub is_osiris_certificate {
+    my ($self) = @_;
+    my $eku = $self->ExtKeyUsage;
+    if (ref $eku eq "ARRAY" && scalar @$eku) {
+        foreach my $e (@$eku) {
+            if ($e eq "1.3.5.1.3.1.17128.313") {
+                return 1;
+            }
+        }
+    }
+    return undef;
+}
+
+sub use {
+    my ($self) = @_;
+    my $ku = $self->KeyUsage;
+    my $use;
+    if (ref $ku eq "ARRAY" && scalar @$ku) {
+        foreach my $e (@$ku) {
+            if ($e eq "digitalSignature") {
+                $use = $use ? "both" : "sig";
+            } elsif ($e eq "dataEncipherment") {
+                $use = $use ? "both" : "enc";
+            }
+        } 
+    }
+    return $use;
+}
+
+sub can_encrypt {
+    my ($self) = @_;
+    my $use = $self->use;
+    if ($use eq "enc" || $use eq "both") {
+        return 1;
+    } elsif (!$use) {
+        return 1;
+    }
+    return undef;
+}
+
+sub can_sign {
+    my ($self) = @_;
+    my $use = $self->use;
+    if ($use eq "sig" || $use eq "both") {
+        return 1;
+    } elsif (!$use) {
+        return 1;
+    }
+    return undef;
 }
 
 sub pubkey {
@@ -74,12 +131,34 @@ sub pubkey {
     return $pk_obj;
 }
 
+sub verify {
+    my ($self, $sig, $msg) = @_;
+
+    unless ($self->can_sign) {
+        croak "[fatal] attempt to verify signature with a keypair meant for use '@{[$self->use]}'\n";
+    }
+
+    return $self->pk->verify_message(b64u_decode($sig), $msg, 'SHA256', 'v1.5');
+}
+
+sub encrypt {
+    my ($self, $msg) = @_;
+    unless ($self->can_encrypt) {
+        croak "[fatal] attempt to encrypt with a keypair meant for use '@{[$self->use]}'\n";
+    }
+    return b64u_encode($self->pk->encrypt($msg, 'oaep', 'SHA256'));
+}
+
 sub to_jwk {
-    shift->pubkey->export_key_jwk('public');    
+    return shift->pubkey->export_key_jwk('public');    
 }
 
 sub thumbprint {
-    shift->pubkey->export_key_jwk_thumbprint('SHA256');
+    return shift->pubkey->export_key_jwk_thumbprint('SHA256');
+}
+
+sub osiris_key_thumbprint {
+    return 'urn:oid:1.3.5.1.3.1.17128.313.1.1:' . shift->thumbprint;
 }
 
 sub to_pem {

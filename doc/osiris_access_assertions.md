@@ -56,27 +56,89 @@ objectClass ( 1.3.5.1.3.1.17128.313.3
 
 ```
 
+## CA Metadata (for OAR, OAG, and OAA)
+{
+    "issuer": "urn:oid:1.3.5.1.3.1.17128.313.1.1:wc5Zzs8nMYHfJnXvMAm89-JwlACdv1vhV9n9O7KFmCE",
+    "grant_endpoint": "https://comanage.osris.org/oakd/oag/",
+    "token_endpoint": "https://comanage.osris.org/oakd/oat/",
+    "jwks_uri": "https://comanage.osris.org/oakd/jwks.json"
+}
+
+## Pre-Registration
+
+All Resource Providers need to register themselves with the central authority, in the spirit of SAML2
+or OpenID metadata something along the lines of:
+
+```
+{
+    "issuer": "urn:oid:1.3.5.1.3.1.17128.313.1.1:42tmeP_0-ZmskjspWJYrUNPa1x9kHvRDY09ZDNssB0c",
+    "request_endpoint": "https://stpd-01.wsu.osris.org:8181/oar/",
+    "token_endpoint": "https://stpd-01.wsu.osris.org:8181/oat/",
+    "jwks_uri": "https://stpd-01.wsu.osris.org:8181/jwks.json",
+    // or optionally, just inline
+    "jwks": [
+        {
+            "use": "enc",
+            "e": "AQAB",
+            "kty": "RSA",
+            "n": "0T1hsZvkMoV2RC0xKAU1cNTZjZFoF0e93KZ33E-WVuzR6O2lJHaVo4puYEw4r5L8t5pIFEnfVM..."
+        },
+        {
+            "use": "sig",
+            "e": "AQAB",
+            "kty": "RSA",
+            "n":"59qvRCIb8ggFrn-lp1g32841Q8764jd3uOwUHrA-apWpI5XYDwdE-6GIoM3gSKxXrNXsWz1Qcvm..."
+        }
+    ],
+    // provide a list of services provided by this RP.. (can be scoped, so the CA can route the
+    // request appropriately, or unscoped and OARs can be refused if the RP refuses to provide for
+    // the subject's origin/scope)
+    "provides": ["ceph.*@wayne.edu", "ceph.*@umich.edu", "ceph.*@msu.edu", "ceph.s3.read@emich.edu"],
+}
+```
+
 ## OAA Issuance Flow
+
+### JWT-like header segments
+
+The header should state the type of token this is, using `OAR` for Access Requests, `OAG` for Access Grants,
+`OAA` for Access Assertions, and `JWT` for OAT and ORT for compatibility reasons.
+
+```
+{
+    "typ": "OAR",
+    "alg": "RS256"
+}
+```
 
 ### Access Request
 
 ```
 {
-    "iss": "urn:oid:1.3.5.1.3.1.17128.313.1.1:SGvZyx1ziKvnNr7_q8OrBGauJUm4dIa",
+    "iss": "urn:oid:1.3.5.1.3.1.17128.313.1.1:adYu1swU1C0gMV12mYOwDKUjn1VQ4nndRv35bBEx-wM",
     "jti": "E821240C-5494-4B40-8387-5DC3A3B37813",
     "iat": 1473280947,
     "exp": 1473280977,
-    "sub": ["ak1520@wayne.edu", "urn:1.3.5.1.3.1.17128.313.1.1:SGvZyx1ziKvnNr7_q8OrBGauJUm4dIa:comanage:1"],
+    "sub": ["ak1520@wayne.edu", "urn:oid:1.3.5.1.3.1.17128.313.1.1:adYu1swU1C0gMV12mYOwDKUjn1VQ4nndRv35bBEx-wM:co:1:role:3"],
     "aud": [
-        "urn:oid:1.3.5.1.3.1.17128.313.1.1:AfRlV67YnPf-Q-8WpM23B7Ds7vlIJJER", "urn:oid:1.3.5.1.3.1.17128.313.1.1:hRiHEh-3fCe47Kg0UhMVjx1RRYVsdqDk"
+        "urn:oid:1.3.5.1.3.1.17128.313.1.1:8h-A8A72BLO8yjZjdafO860In5WIeTQQhwb1A1VyeSw", "urn:oid:1.3.5.1.3.1.17128.313.1.1:tQoTGHJ-tlWkpDQ0X88RyDP52Xe-KCQhNUW_8LuEMEY",
+        "urn:oid:1.3.5.1.3.1.17128.313.1.1:gwOWVIf26Htah1Yovtr3_oFov4LfEt7c10nUozGghug"
     ],
 
     // session key encrypted with each resource provider's public key
     // provided in the same order they are listed in 'aud', any sensitive
     // data will be encrypted with this symmetric session key using
-    // crypto_stream_xor
+    // crypto_secret_box
+
+    // the session key is encypted with SHA256 RSA-OAEP once for every audience
+    // if a particular audience member is to be excluded from being able to 
+    // decrypt "_opaque" content for this assertion, a 'null' will be included
+    // in the index that corresponds to its index in the 'aud' array.  notice
+    // the second audience member 'hRiHEh-3fCe47Kg0UhMVjx1RRYVsdqDk' will be
+    // unable to decrypt any opaque content in this message
     "sk": [
         "vr77Lv31xJXQPR0pNA63JC4",
+        null,
         "/02ZGeOePwriwiO6F3r4eok"
     ],
 
@@ -86,7 +148,6 @@ objectClass ( 1.3.5.1.3.1.17128.313.3
     // it is found 
     // note: the first 24 bytes after decoding are the nonce.
     // for example:
-
     "_opaque": "zOkEBma9l/8xx8bkH2CE5LAXpq75tguJfVSRYH9tZ3I6vn9OJAnCLoh0ehF",
 
     // an array of access we're requesting.  order corresponds to the
@@ -95,7 +156,7 @@ objectClass ( 1.3.5.1.3.1.17128.313.3
     // 'read', 'write', and 'admin' access to 'science2:/mad/science' 
     // and shell accounts and access to 'science.example.com' and
     // 'shells.archimedes.gr'
-    access: [
+    "access": [
         // literal strings represent single types of access, could also be
         // written as ["read"],
         "read",

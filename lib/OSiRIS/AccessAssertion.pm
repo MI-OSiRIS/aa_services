@@ -46,7 +46,7 @@ ultra fast resources?!  That'd be awesome.
 use Carp qw/croak confess/;
 use JSON::Validator;
 
-our $sk_pem, $cert_pem, $sk, $cert, $config;
+our($sk_pem, $cert_pem, $sk, $cert, $config);
 
 BEGIN { 
     use Mojo::Base -base;
@@ -54,31 +54,40 @@ BEGIN {
     use OSiRIS::Config;
     use OSiRIS::AccessAssertion::Certificate;
     use OSiRIS::AccessAssertion::Key;
-    use OSiRIS::AccessAssertion::Util qw/b64u_decode b64u_encode encode_json digest_data gen_rsa_pair slurp/;
+    use OSiRIS::AccessAssertion::Util qw/b64u_decode b64u_encode encode_json digest_data gen_rsa_keys slurp/;
 
     unless ($ENV{AA_HOME}) {
-        warn "[error] AA_HOME environment variable undefined, defaulting to /opt/osiris/aa_services\n";
+        print "[debug] AA_HOME environment variable undefined, defaulting to /opt/osiris/aa_services\n" if $ENV{AA_DEBUG};
         $ENV{AA_HOME} = "/opt/osiris/aa_services";
     }
 
-    # define the configuration loader
-    has config => sub {
+    # define the configuration loader in lexical scope so we can reference it below
+    # when generating the keypair for this system
+    my $config_loader = sub {
         unless ($config) {
             $config = OSiRIS::Config->parse("$ENV{AA_HOME}/etc/aa_services.conf");
         }
         return $config;
-    }
+    };
+
+    # add it as a method to our class
+    has config => $config_loader;
 
     my $keys_folder = "$ENV{AA_HOME}/etc/keys";
-    $sk_pem = slurp "$keys_folder/rsa.key";
-    $cert_pem = slurp "$keys_folder/rsa.crt";
+    if (-e "$keys_folder/rsa.key") {
+        $sk_pem = slurp "$keys_folder/rsa.key";
+    }
     
+    if (-e "$keys_folder/rsa.crt") {
+        $cert_pem = slurp "$keys_folder/rsa.crt";
+    }
+
     # if we still don't have them.. generate them.
     unless ($sk_pem && $cert_pem) {
         # Configure OpenSSL...
-        my $c = __PACKAGE__::config();
+        my $c = $config_loader->();
         my $key_config = {};
-        foreach my $opt (qw/ country state locality organization organizational_unit email_address/) {
+        foreach my $opt (qw/ country state locality organization organizational_unit email_address /) {
             if (exists $c->{$opt} && $c->{$opt}) {
                 $key_config->{$opt} = $c->{$opt};
             }
@@ -106,8 +115,8 @@ BEGIN {
 }
 
 has log => sub { return Mojo::Log->new(path => "$ENV{AA_HOME}/var/log/aa_services.log", level => 'warn') };
-has rsa_key => sub { return $sk };
-has rsa_cert => sub { return $cert };
+has my_key => sub { return $sk };
+has my_cert => sub { return $cert };
 
 # these are the types of assertions we can possibly be
 has VALID_TYPES => sub {
@@ -241,13 +250,13 @@ sub to_jwt {
 
     my $header = encode_base64url(encode_json({
         alg => 'RS256',
-        x5t => encode_base64url(digest_data('SHA256', $cert->to_der)),
+        x5t => $self->my_cert->thumbprint,
         x5u => $self->config->{front_door_url} . '/oaa/pubkey.pem',
     }), '');
 
     # scope the jwt to Mi-OSiRIS
-    unless ($access->{aud} =~ /^urn\:MI-OSiRIS\:/) {
-        $access->{aud} = 'urn:MI-OSiRIS:$access->{aud}';
+    unless ($access->{aud} =~ /^\Qurn:oid:1.3.5.1.3.1.17128.313.1.1:\E/) {
+        $access->{aud} = 'urn:oid:1.3.5.1.3.1.17128.313.1.1:$access->{aud}';
     }
 
     $access = {
@@ -261,7 +270,7 @@ sub to_jwt {
         %$access,
 
         # but don't let anything override the issuer
-        iss => ('urn:MI-OSiRIS:' . trim `uname -n`),
+        iss => $self->my_cert->osiris_key_thumbprint,
     };
 
 
