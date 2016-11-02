@@ -71,6 +71,17 @@ eval {
 
 like($@, qr/fatal/, "fatal error trying to encrypt with a signing key");
 
+# reset.
+undef $@;
+
+eval {
+    $bob_enc_cert->verify($signature, $encoded_ciphertext);
+};
+
+like($@, qr/fatal/, "fatal error trying to verify a signature with an encryption cert");
+
+diag $bob_sig_cert->subject_cn;
+
 unlink('/tmp/bob_sig.key');
 unlink('/tmp/bob_sig.crt');
 unlink('/tmp/bob_enc.key');

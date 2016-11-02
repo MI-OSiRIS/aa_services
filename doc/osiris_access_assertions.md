@@ -9,7 +9,7 @@
  * Allows the formation of roles and groups for convenience 
  * Facilitates the safe keeping of Access Assertions (OAAs) long term
 * Resource User - An individual or group of individuals that wants to have or currently has access to a resource pvoided by a _Resource Provider_
-* Resource Provider - A system capable of providing certain types of services to _Resource User_s. 
+* Resource Provider - A system capable of providing certain types of services to _Resource Users_. 
 
 * OSiRIS Token Types
  * _OSiRIS Access Request (OAR)_ - Issued by _Central Authority_ `oakd` to one or more _Resource Authorities_ `stpd` to provision services and receive an...
@@ -28,7 +28,7 @@
 
 * _Identity Authority_ - A traditional SAML2, OpenID Connect, CAS, or to-be-created assertion generating authority for a given entity.
 
-* _Central Authority_ - e.g. OSiRIS `oakd`, trusts InCommon and other IdPs, handles Authentication and authorization for the OSiRIS enterprise itself, and performs some AuthZ.  If `oakd` issues an 
+* _Central Authority_ - e.g. OSiRIS `oakd`, trusts InCommon and other IdPs, handles Authentication and authorization for the OSiRIS enterprise itself, and performs some AuthZ.  `oakd` issues _OARs_ and _OAAs_ on behalf of authenticated principals.
 
 * _Resource Authorities/Providers_ - e.g. OSiRIS `stpd`, has certificates and will sign tokens issued by _Identity Authorities_ if certain criteria are met.  This gives resource owners a bit of their own AuthZ power and might come in handy.  This also introduces a point in the OAA issuance flow for provisioning of resources themselves.  Even if access keys are ephemeral, the resources themselves (UNIX Accounts, sudo rights, filesystems, namespaces, and block devices) are not.
 
@@ -37,10 +37,17 @@
 ```
 attributeType ( 1.3.5.1.3.1.17128.313.1.1
     NAME 'osirisKeyThumbprint',
-    DESC 'a Base64-URL encoded SHA256 hash of a DER encoded certificate'
+    DESC 'a Base64-URL encoded SHA256 hash of a DER encoded RSA public key'
     EQUALITY caseExactMatch
     SINGLE_VALUE
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 )
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )
+
+attributeType (1.3.5.1.3.1.17128.313.1.2
+    NAME 'osirisEntityUniqueID'
+    DESC 'a UUID uniquely identifying an OSiRIS entity'
+    EQUALITY caseIgnoreMatch
+    SINGLE_VALUE
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )
 
 objectClass ( 1.3.5.1.3.1.17128.313.1 
     NAME 'osirisEntity' SUP top AUXILIARY 
@@ -56,15 +63,37 @@ objectClass ( 1.3.5.1.3.1.17128.313.3
 
 ```
 
-## CA Metadata (for OAR, OAG, and OAA)
+## Pre-Registration
+
+### Central Authority Metadata (for OAR, OAG, and OAA)
+
+The `Central Authority` will need metadata of its own, note the `urn:oid` format used here is based upon the LDAP schema defined above for the `osirisKeyThumbprint` attribute.  **Please Note** The EntityID/Issuer string format is the `urn:oid:1.3.5.1.3.1.17128.313.1.1:` prefix followed by the [jwk thumbprint](https://tools.ietf.org/html/rfc7638) of the current _signing_ key.  Safeguards are in place, for example calling `osiris_key_thumbprint` on an encryption certificate object will throw a fatal error, but 
+
+```
 {
     "issuer": "urn:oid:1.3.5.1.3.1.17128.313.1.1:wc5Zzs8nMYHfJnXvMAm89-JwlACdv1vhV9n9O7KFmCE",
     "grant_endpoint": "https://comanage.osris.org/oakd/oag/",
     "token_endpoint": "https://comanage.osris.org/oakd/oat/",
-    "jwks_uri": "https://comanage.osris.org/oakd/jwks.json"
+    "jwks_uri": "https://comanage.osris.org/oakd/jwks.json",
+    // or optionally, inline with the metadata
+    "jwks": [
+        {
+            "use": "enc",
+            "e": "AQAB",
+            "kty": "RSA",
+            "n": "0T1hsZvkMoV2RC0xKAU1cNTZjZFoF0e93KZ33E-WVuzR6O2lJHaVo4puYEw4r5L8t5pIFEnfVM..."
+        },
+        {
+            "use": "sig",
+            "e": "AQAB",
+            "kty": "RSA",
+            "n":"59qvRCIb8ggFrn-lp1g32841Q8764jd3uOwUHrA-apWpI5XYDwdE-6GIoM3gSKxXrNXsWz1Qcvm..."
+        }
+    ],
 }
+```
 
-## Pre-Registration
+### Resource Provider Metadata
 
 All Resource Providers need to register themselves with the central authority, in the spirit of SAML2
 or OpenID metadata something along the lines of:
@@ -75,7 +104,7 @@ or OpenID metadata something along the lines of:
     "request_endpoint": "https://stpd-01.wsu.osris.org:8181/oar/",
     "token_endpoint": "https://stpd-01.wsu.osris.org:8181/oat/",
     "jwks_uri": "https://stpd-01.wsu.osris.org:8181/jwks.json",
-    // or optionally, just inline
+    // or optionally, inline with the metadata
     "jwks": [
         {
             "use": "enc",
@@ -119,7 +148,10 @@ The header should state the type of token this is, using `OAR` for Access Reques
     "jti": "E821240C-5494-4B40-8387-5DC3A3B37813",
     "iat": 1473280947,
     "exp": 1473280977,
-    "sub": ["ak1520@wayne.edu", "urn:oid:1.3.5.1.3.1.17128.313.1.1:adYu1swU1C0gMV12mYOwDKUjn1VQ4nndRv35bBEx-wM:co:1:role:3"],
+    "sub": [
+        "ak1520@wayne.edu", 
+        "urn:oid:1.3.5.1.3.1.17128.313.1.1:adYu1swU1C0gMV12mYOwDKUjn1VQ4nndRv35bBEx-wM:co:1:role:3"
+    ],
     "aud": [
         "urn:oid:1.3.5.1.3.1.17128.313.1.1:8h-A8A72BLO8yjZjdafO860In5WIeTQQhwb1A1VyeSw", "urn:oid:1.3.5.1.3.1.17128.313.1.1:tQoTGHJ-tlWkpDQ0X88RyDP52Xe-KCQhNUW_8LuEMEY",
         "urn:oid:1.3.5.1.3.1.17128.313.1.1:gwOWVIf26Htah1Yovtr3_oFov4LfEt7c10nUozGghug"

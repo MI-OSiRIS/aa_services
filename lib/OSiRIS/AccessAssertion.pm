@@ -42,79 +42,32 @@ ultra fast resources?!  That'd be awesome.
 
 =cut
 
-
+use Mojo::Base -base;
+use Mojo::Log;
+use OSiRIS::Config;
+use OSiRIS::AccessAssertion::Certificate;
+use OSiRIS::AccessAssertion::Key;
+use OSiRIS::AccessAssertion::Util qw/b64u_decode b64u_encode encode_json digest_data gen_rsa_keys slurp/;
 use Carp qw/croak confess/;
 use JSON::Validator;
 
 our($sk_pem, $cert_pem, $sk, $cert, $config);
 
 BEGIN { 
-    use Mojo::Base -base;
-    use Mojo::Log;
-    use OSiRIS::Config;
-    use OSiRIS::AccessAssertion::Certificate;
-    use OSiRIS::AccessAssertion::Key;
-    use OSiRIS::AccessAssertion::Util qw/b64u_decode b64u_encode encode_json digest_data gen_rsa_keys slurp/;
-
     unless ($ENV{AA_HOME}) {
         print "[debug] AA_HOME environment variable undefined, defaulting to /opt/osiris/aa_services\n" if $ENV{AA_DEBUG};
         $ENV{AA_HOME} = "/opt/osiris/aa_services";
     }
-
-    # define the configuration loader in lexical scope so we can reference it below
-    # when generating the keypair for this system
-    my $config_loader = sub {
-        unless ($config) {
-            $config = OSiRIS::Config->parse("$ENV{AA_HOME}/etc/aa_services.conf");
-        }
-        return $config;
-    };
-
-    # add it as a method to our class
-    has config => $config_loader;
-
-    my $keys_folder = "$ENV{AA_HOME}/etc/keys";
-    if (-e "$keys_folder/rsa.key") {
-        $sk_pem = slurp "$keys_folder/rsa.key";
-    }
-    
-    if (-e "$keys_folder/rsa.crt") {
-        $cert_pem = slurp "$keys_folder/rsa.crt";
-    }
-
-    # if we still don't have them.. generate them.
-    unless ($sk_pem && $cert_pem) {
-        # Configure OpenSSL...
-        my $c = $config_loader->();
-        my $key_config = {};
-        foreach my $opt (qw/ country state locality organization organizational_unit email_address /) {
-            if (exists $c->{$opt} && $c->{$opt}) {
-                $key_config->{$opt} = $c->{$opt};
-            }
-        }
-
-        if (exists $c->{rsa_key_size} && $c->{rsa_key_size}) {
-            $key_config->{bits} = $c->{rsa_key_size};
-        }
-
-        if (exists $c->{rsa_cert_validity} && $c->{rsa_cert_validity}) {
-            $key_config->{days} = $c->{rsa_cert_validity};
-        }
-
-        # Generate the keys and certificate, save them where we think they need to go...
-        gen_rsa_keys($key_config, "$keys_folder/rsa.key", "$keys_folder/rsa.crt");
-
-        # load them up
-        $sk_pem = slurp "$keys_folder/rsa.key";
-        $cert_pem = slurp "$keys_folder/rsa.crt";
-    }
-
-    # instantiate objects from the pems..
-    $sk = OSiRIS::AccessAssertion::Key->new(\$sk_pem);
-    $cert = OSiRIS::AccessAssertion::Certificate->new(\$cert_pem);
 }
 
+
 has log => sub { return Mojo::Log->new(path => "$ENV{AA_HOME}/var/log/aa_services.log", level => 'warn') };
+has config => sub {
+    unless ($config) {
+        $config = OSiRIS::Config->parse("$ENV{AA_HOME}/etc/aa_services.conf");
+    }
+    return $config;
+};
 has my_key => sub { return $sk };
 has my_cert => sub { return $cert };
 

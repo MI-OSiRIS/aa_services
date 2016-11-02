@@ -1,3 +1,9 @@
 {
-    
+    pubkey_url => 'https://comanage.osris.org/oakd/jwks.json',
+    country => 'US',
+    state => 'Michigan',
+    locality => 'Detroit',
+    organization => 'Wayne State University',
+    organizational_unit => 'Computing & Information Technology',
+    email_address => 'ak1520@wayne.edu',
 }

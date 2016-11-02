@@ -120,8 +120,6 @@ sub gen_self_signed_rsa_pair {
         $config->{common_name} = "urn:uuid:" . new_uuid();
     }
 
-
-
     open my $ossl_cfg, '>', "/tmp/osiris_openssl_config.$$.conf";
     print $ossl_cfg "[ req ]\n";
     print $ossl_cfg "default_bits = $config->{bits}\n";

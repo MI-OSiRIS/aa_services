@@ -158,7 +158,12 @@ sub thumbprint {
 }
 
 sub osiris_key_thumbprint {
-    return 'urn:oid:1.3.5.1.3.1.17128.313.1.1:' . shift->thumbprint;
+    my ($self) = @_;
+    if ($self->can_sign) {
+        return 'urn:oid:1.3.5.1.3.1.17128.313.1.1:' . $self->thumbprint;
+    } else {
+        croak "[fatal] you want the osiris_key_thumbprint of the signing public key\n";
+    }
 }
 
 sub to_pem {
