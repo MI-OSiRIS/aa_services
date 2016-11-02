@@ -217,7 +217,7 @@ sub to_jwt {
         exp => time + $self->config->{session_length},
         nbf => time,
         iat => time,
-        jti => $c->new_uuid,
+        jti => $self->new_uuid,
 
         # let passed values override defaults
         %$access,
@@ -226,52 +226,23 @@ sub to_jwt {
         iss => $self->my_cert->osiris_key_thumbprint,
     };
 
-
-    my $token = $c->m->resultset("Academica::Plugin::OAuth2::Model::Token")->create({
-        academica_user => $user->id,
-        client => $client->id,
-        unique_id => $jwt->{jti},
-        signer_thumbprint => $c->thumbprint(b64_decode($c->oauth2->x509_string)),
-        expire_time => $jwt->{exp},
-    });
-
-    # do user specific stuff here.
-    if (my $password = delete $jwt->{_password}) {
-        # they supplied a password... make sure it's for this user.
-        if ($c->authenticate_user($user->userid, $password)) {
-            # this is this user's password, this must be the intention of the caller
-            my $key = $c->crypto_stream_key;
-            my $enc_pw = $c->encrypt_pw($password, $key, $token->id);
-
-            # the key goes in the database
-            $token->auxiliary_secret($key);
-            
-            # but the encrypted password only ever goes into the token
-            $jwt->{ap_cred} = $enc_pw;
-        }
-    }
-
-    if (my $refresh = delete $jwt->{_refresh_token}) {
-        $token->is_refresh_token(1);
-    }
-
     # update the token in the database if we changed anything..
-    if ($token->is_changed) {
-        $token->update;
-    }
+    # if ($token->is_changed) {
+    #     $token->update;
+    # }
 
-    my $payload = encode_base64url(encode_json($jwt));
-    my $sig = $crypto->{$c->oauth2->config->{signature_method}}->{sign}->($c->oauth2->rsa_sk, "$header.$payload");
+    #my $payload = encode_base64url(encode_json());
+    #my $sig = "$header.$payload"
 
-    if ($json_serialization) {
-        return encode_json({
-            header => [$header],
-            payload => $payload,
-            signature => [$sig],
-        });
-    } else {
-        return "$header.$payload.$sig";
-    }
+    # if ($json_serialization) {
+    #     return encode_json({
+    #         header => [$header],
+    #         payload => $payload,
+    #         signature => [$sig],
+    #     });
+    # } else {
+    #     return "$header.$payload.$sig";
+    # }
 }
 
 =pod
