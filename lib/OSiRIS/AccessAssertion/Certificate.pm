@@ -66,10 +66,53 @@ monkey_patch(__PACKAGE__, 'unharness', \&_unharness);
 monkey_patch(__PACKAGE__, 'armor', \&harness);
 monkey_patch(__PACKAGE__, 'unarmor', \&unharness);
 
+# rename these locally
+monkey_patch(__PACKAGE__, 'common_name', \&Crypt::X509::subject_cn);
+monkey_patch(__PACKAGE__, 'organizational_unit', \&Crypt::X509::subject_ou);
+monkey_patch(__PACKAGE__, 'organization', \&Crypt::X509::subject_org);
+monkey_patch(__PACKAGE__, 'locality', \&Crypt::X509::subject_locality);
+monkey_patch(__PACKAGE__, 'country', \&Crypt::X509::subject_country);
+monkey_patch(__PACKAGE__, 'state', \&Crypt::X509::subject_state);
+monkey_patch(__PACKAGE__, 'email', \&Crypt::X509::subject_email);
+
 our @EXPORT_OK = (
     qw/harness unharness armor unarmor/,
 );
 
+sub expires {
+    my ($self) = @_;
+    return "@{[scalar gmtime($self->not_after)]} UTC";
+}
+
+sub expires_in_days {
+    my ($self) = @_;
+    return int(($self->not_after - time) / 86400);
+}
+
+sub valid {
+    my ($self) = @_;
+    if (time < $self->not_after && time > $self->not_before) {
+        return 1;
+    }
+    return undef;
+}
+
+# does its best to reproduce the configuration that created this key
+sub config {
+    my ($self, %newopts) = @_;
+    return {
+        country => $self->country,
+        state => $self->state,
+        locality => $self->locality,
+        organization => $self->organization,
+        organizational_unit => $self->organizational_unit,
+        email_address => $self->email,
+        common_name => $self->common_name,
+        bits => ($self->pubkey_size > 4096 ? 4096 : $self->pubkey_size > 2048 ? 2048 : 2048), # nothing smaller than 2048, sre.
+        days => (($self->not_after - $self->not_before) / 86400),
+        %newopts,
+    }
+}
 
 sub is_osiris_certificate {
     my ($self) = @_;

@@ -50,6 +50,7 @@ our @EXPORT_OK = (
     qw/
         new_crypto_stream_key new_crypto_stream_nonce crypto_stream_xor gen_rsa_keys gen_self_signed_rsa_pair
         load_rsa_pair load_rsa_key load_rsa_cert digest_data digest_data_hex digest_file digest_file_hex
+        self_sign_key
     /,
     # encoding functions
     qw/
@@ -58,7 +59,7 @@ our @EXPORT_OK = (
     /,
     # random string generators
     qw/
-        random_bytes random_hex random_a85 random_b64 random_b64u
+        random_bytes random_hex random_a85 random_b64 random_b64u new_uuid
     /,
 );
 
@@ -66,38 +67,90 @@ our %EXPORT_TAGS = (
     all => [@EXPORT_OK],
     crypto => [qw/
         new_crypto_stream_key new_crypto_stream_nonce crypto_stream_xor gen_rsa_keys gen_self_signed_rsa_pair
-        load_rsa_pair load_rsa_key load_rsa_cert
+        load_rsa_pair load_rsa_key load_rsa_cert self_sign_key
     /],
     encoding => [qw/
         to_json from_json encode_json decode_json encode decode b64_encode b64_decode a85_encode a85_decode
         b64u_encode b64u_decode
     /],
-    random => [qw/random_bytes random_hex random_a85 random_b64 random_b64u/],
+    random => [qw/random_bytes random_hex random_a85 random_b64 random_b64u new_uuid/],
     mojo => [@Mojo::Util::EXPORT_OK],
 );
 
-my @OPENSSL_DEFAULTS = (
-    country => "US",
-    state => "Michigan",
-    locality => "Detroit",
-    organization => "Wayne State University",
-    organizational_unit => "MI-OSiRIS",
-    email_address => 'ak1520@wayne.edu',
-    bits => 4096,
-    days => 7300,
-);
+
 
 # Aliases
 monkey_patch(__PACKAGE__, 'b64u_encode', \&encode_base64url);
 monkey_patch(__PACKAGE__, 'b64u_decode', \&decode_base64url);
 monkey_patch(__PACKAGE__, 'gen_rsa_keys', \&gen_self_signed_rsa_pair);
 
+sub self_sign_key {
+    my ($user_config, $key_file, $cert_file) = @_;
+
+    my $force;
+    if (ref $user_config eq "HASH") {
+        $force = delete $user_config->{force};
+    }
+
+    # the key must exist for us to certify it
+    unless (-e $key_file) {
+        croak "[fatal] $key_file doesn't exist, cannot generate certificate for it\n";
+    }
+
+    # only overwrite the certificate if force was specified
+    if (-e $cert_file && !$force) {
+        croak "[fatal] $cert_file exists, please remove before calling self_sign_key or pass force => 1 in options\n";
+    }
+
+    _config_openssl_and_run($user_config, sub {
+        my ($config) = @_;
+        system("openssl req -new -x509 -key $key_file -out $cert_file -days $config->{days} -sha256 -config /tmp/osiris_openssl_config.$$.conf >/dev/null 2>&1");
+    });
+}
+
 sub gen_self_signed_rsa_pair {
     my ($user_config, $key_file, $cert_file) = @_;
 
-    my ($force, $config);
+    my $force;
     if (ref $user_config eq "HASH") {
         $force = delete $user_config->{force};
+    }
+
+    # check that key doesn't exist
+    if (-e $key_file && !$force) {
+        croak "[fatal] $key_file exists, please remove before calling gen_self_signed_rsa_pair or pass force => 1 in options\n";
+    }
+
+    # make sure that cert doesn't exist either
+    if (-e $cert_file && !$force) {
+        croak "[fatal] $cert_file exists, please remove before calling gen_self_signed_rsa_pair or pass force => 1 in options\n";
+    }
+
+    _config_openssl_and_run($user_config, sub {
+        my ($config) = @_;
+        system("openssl genrsa -out $key_file $config->{bits} >/dev/null 2>&1");
+        system("openssl req -new -x509 -key $key_file -out $cert_file -days $config->{days} -sha256 -config /tmp/osiris_openssl_config.$$.conf >/dev/null 2>&1");
+    });
+
+    return ($key_file, $cert_file);
+}
+
+sub _config_openssl_and_run {
+    my ($user_config, $cb) = @_;
+
+    my @OPENSSL_DEFAULTS = (
+        country => "US",
+        state => "Michigan",
+        locality => "Detroit",
+        organization => "Wayne State University",
+        organizational_unit => "MI-OSiRIS",
+        email_address => 'ak1520@wayne.edu',
+        bits => 4096,
+        days => 7300,
+    );
+
+    my $config;
+    if (ref $user_config eq "HASH") {
         $config = {
             @OPENSSL_DEFAULTS,
 
@@ -106,14 +159,6 @@ sub gen_self_signed_rsa_pair {
         };
     } else {
         $config = { @OPENSSL_DEFAULTS };
-    }
-
-    if (-e $key_file && !$force) {
-        croak "[fatal] $key_file exists, please remove before calling gen_self_signed_rsa_pair or pass force => 1 in options\n";
-    }
-
-    if (-e $cert_file && !$force) {
-        croak "[fatal] $cert_file exists, please remove before calling gen_self_signed_rsa_pair or pass force => 1 in options\n";
     }
 
     unless (exists $config->{common_name} && $config->{common_name}) {
@@ -151,14 +196,10 @@ sub gen_self_signed_rsa_pair {
     print $ossl_cfg "CN=$config->{common_name}\n";
     print $ossl_cfg "emailAddress=$config->{email_address}\n";
     close $ossl_cfg;
-
-    system("openssl genrsa -out $key_file $config->{bits} >/dev/null 2>&1");
-    system("openssl req -new -x509 -key $key_file -out $cert_file -days $config->{days} -sha256 -config /tmp/osiris_openssl_config.$$.conf >/dev/null 2>&1");
-
+    if (ref $cb eq "CODE") {
+        $cb->($config);
+    }
     unlink("/tmp/osiris_openssl_config.$$.conf") if -e "/tmp/osiris_openssl_config.$$.conf";
-
-    return ($key_file, $cert_file);
-    return load_rsa_pair($key_file, $cert_file);
 }
 
 sub new_uuid {

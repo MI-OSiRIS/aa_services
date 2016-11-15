@@ -9,6 +9,7 @@ use OSiRIS::AccessAssertion::Certificate;
 use OSiRIS::AccessAssertion::Key;
 use OSiRIS::AccessAssertion::Util qw/gen_rsa_keys new_uuid/;
 use OSiRIS::Config;
+use POSIX 'strftime';
 use File::Copy;
 
 BEGIN { 
@@ -29,7 +30,8 @@ if ($command = "genkeys") {
     GetOptions(
         'd|key-directory' => \my $keys_directory,
         'f|force-new' => \my $force_new,
-        'r|refresh' => \my $refresh,
+        'r|refresh-cert' => \my $refresh_cert,
+        'g|gen-new-keys' => \my $gen_new_keys,
         'e|entity-id' => \my $entity_id,        
     );
 
@@ -57,11 +59,26 @@ if ($command = "genkeys") {
             die "[fatal] keys already exist, run with --force-new to force creation\n";
         }
     }
-
-    my $cn;
+    my $cn = $entity_id ? $entity_id : 'urn:uid:' . new_uuid();
+    my ($sc, $sk, $ec, $ek);
     if ($link_count == 4) {
-        
+        # signing pair
+        $sc = OSiRIS::AccessAssertion::Certificate->new("$keys_directory/sign.crt");
+        $sk = OSiRIS::AccessAssertion::Key->new({ cert => $sc, file => "$keys_directory/sign.key"});
+
+        # crypto pair
+        $ec = OSiRIS::AccessAssertion::Certificate->new("$keys_directory/enc.crt");
+        $ek = OSiRIS::AccessAssertion::Key->new({ cert => $ec, file => "$keys_directory/enc.key"});
+
+        my $time = time;
+        if ($refresh_cert) {
+            if ($gen_new_keys) {
+
+            } else {
+                self_sign_key($sc->config, "$keys_directory/sign.key", "$keys_directory/sign.@{[strftime('%F-%I.%M.%S.%p', localtime($time))]}.crt")
+            }
+        }
     }
 
-    my $cn = "urn:uuid:" . new_uuid();
+    $cn = "urn:uuid:" . new_uuid();
 }

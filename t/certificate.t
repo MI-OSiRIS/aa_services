@@ -1,10 +1,10 @@
 use Test::More;
-use OSiRIS::AccessAssertion::Util qw/:crypto/;
+use OSiRIS::AccessAssertion::Util qw/new_uuid :crypto/;
 use Mojo::Util qw/slurp b64_decode/;
 
 use_ok('OSiRIS::AccessAssertion::Certificate', 'unharness');
-
-gen_rsa_keys({type => 'enc'}, '/tmp/alice_enc.key', '/tmp/alice_enc.crt');
+my $alice_cn = 'urn:uuid:' . new_uuid();
+gen_rsa_keys({type => 'enc', common_name => $alice_cn}, '/tmp/alice_enc.key', '/tmp/alice_enc.crt');
 
 # native load-from-PEM-file support
 my $cert = OSiRIS::AccessAssertion::Certificate->new('/tmp/alice_enc.crt');
@@ -29,12 +29,11 @@ ok($cert3->subject_locality eq 'Detroit', "testing default certificate loading c
 ok($cert3->use eq "enc", "making sure this key is only good for encryption");
 ok($cert3->is_osiris_certificate, "making sure the certificate has the MI-OSiRIS OID in its extended key usage");
 
-gen_rsa_keys({type => 'sig', locality => 'Flint'}, '/tmp/alice_sig.key', '/tmp/alice_sig.crt');
+gen_rsa_keys({type => 'sig', locality => 'Flint', common_name => $alice_cn}, '/tmp/alice_sig.key', '/tmp/alice_sig.crt');
 my $cert4 = OSiRIS::AccessAssertion::Certificate->new('/tmp/alice_sig.crt');
 ok($cert4->subject_locality eq 'Flint', "default overrides work");
 ok($cert4->use eq "sig", "key is only good for signatures and non repudiation");
 ok($cert4->is_osiris_certificate, "certificate has the MI-OSiRIS OID in extended key usage");
-
 
 # we want the private keys now too...
 use_ok('OSiRIS::AccessAssertion::Key');
@@ -48,8 +47,9 @@ my ($alice_sig_key, $alice_enc_key, $alice_sig_cert, $alice_enc_cert) = (
 #
 # let's set up bob some keys if tests have passed thus far.
 #
-gen_rsa_keys({type => 'enc'}, '/tmp/bob_enc.key', '/tmp/bob_enc.crt');
-gen_rsa_keys({type => 'sig'}, '/tmp/bob_sig.key', '/tmp/bob_sig.crt');
+my $bob_cn = 'urn:uuid:' . new_uuid();
+gen_rsa_keys({type => 'enc', common_name => $bob_cn}, '/tmp/bob_enc.key', '/tmp/bob_enc.crt');
+gen_rsa_keys({type => 'sig', common_name => $bob_cn}, '/tmp/bob_sig.key', '/tmp/bob_sig.crt');
 my ($bob_sig_key, $bob_enc_key, $bob_sig_cert, $bob_enc_cert) = (
     OSiRIS::AccessAssertion::Key->new({ cert => '/tmp/bob_sig.crt', file => '/tmp/bob_sig.key'}),
     OSiRIS::AccessAssertion::Key->new({ cert => '/tmp/bob_enc.crt', file => '/tmp/bob_enc.key'}),
@@ -79,8 +79,10 @@ eval {
 };
 
 like($@, qr/fatal/, "fatal error trying to verify a signature with an encryption cert");
+ok($bob_sig_cert->common_name eq $bob_enc_cert->common_name, "the encryption and signing certs have the same commonName");
 
-diag $bob_sig_cert->subject_cn;
+diag $bob_sig_cert->expires_in_days;
+diag $bob_sig_cert->pubkey_size;
 
 unlink('/tmp/bob_sig.key');
 unlink('/tmp/bob_sig.crt');
