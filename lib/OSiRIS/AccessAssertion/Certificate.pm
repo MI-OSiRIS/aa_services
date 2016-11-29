@@ -110,6 +110,7 @@ sub config {
         common_name => $self->common_name,
         bits => ($self->pubkey_size > 4096 ? 4096 : $self->pubkey_size > 2048 ? 2048 : 2048), # nothing smaller than 2048, sre.
         days => (($self->not_after - $self->not_before) / 86400),
+        type => $self->can_sign ? "sign" : "enc",
         %newopts,
     }
 }

@@ -7,7 +7,7 @@
 
 use OSiRIS::AccessAssertion::Certificate;
 use OSiRIS::AccessAssertion::Key;
-use OSiRIS::AccessAssertion::Util qw/gen_rsa_keys new_uuid/;
+use OSiRIS::AccessAssertion::Util qw/gen_rsa_keys new_uuid self_sign_key/;
 use OSiRIS::Config;
 use POSIX 'strftime';
 use File::Copy;
@@ -26,14 +26,32 @@ use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
 
 my $command = shift @ARGV;
 
-if ($command = "genkeys") {
+# dispatch to subcommand...
+eval {
+    &{"main::c_$command"}()
+};
+
+if ($@ =~ /^Undefined subroutine/) {
+    print "Psst.. $@\n";
+    die usage();
+} elsif ($@) {
+    die $@;
+}
+
+sub c_genkeys {
     GetOptions(
         'd|key-directory' => \my $keys_directory,
-        'f|force-new' => \my $force_new,
         'r|refresh-cert' => \my $refresh_cert,
         'g|gen-new-keys' => \my $gen_new_keys,
-        'e|entity-id' => \my $entity_id,        
+        'e|entity-id=s' => \my $entity_id,
+        'h|help' => \my $help,        
     );
+
+    die c_genkeys_usage() if $help;
+
+    if ($force_new + $refresh_cert + $gen_kew_keys > 1) {
+        die c_genkeys_usage();
+    }
 
     unless ($keys_directory) {
         $keys_directory = "$ENV{AA_HOME}/etc/keys";
@@ -44,22 +62,11 @@ if ($command = "genkeys") {
         if (-l "$keys_directory/$file") {
             ++$link_count;
         } elsif (-f "$keys_directory/$file") {
-            ++$file_count;
+            die "[fatal] $keys_directory/$file is not a symlink!\n";
         }
     }
 
-    if ($file_count) {
-        if ($force_new) {
-            foreach my $file (qw/sign.crt sign.key enc.crt enc.key/) {
-                if (-e "$keys_directory/$file") {
-                    move("$keys_directory/$file", "$keys_directory/$file.@{[time]}.bak");
-                }
-            }
-        } else {
-            die "[fatal] keys already exist, run with --force-new to force creation\n";
-        }
-    }
-    my $cn = $entity_id ? $entity_id : 'urn:uid:' . new_uuid();
+    my $file_time = strftime('%F-%I.%M.%S.%p', localtime());
     my ($sc, $sk, $ec, $ek);
     if ($link_count == 4) {
         # signing pair
@@ -70,15 +77,127 @@ if ($command = "genkeys") {
         $ec = OSiRIS::AccessAssertion::Certificate->new("$keys_directory/enc.crt");
         $ek = OSiRIS::AccessAssertion::Key->new({ cert => $ec, file => "$keys_directory/enc.key"});
 
-        my $time = time;
         if ($refresh_cert) {
-            if ($gen_new_keys) {
+            self_sign_key(
+                $sc->config(force => 1), 
+                "$keys_directory/sign.key", 
+                "$keys_directory/sign.$file_time.crt",
+            );
+            system("rm", "$keys_directory/sign.crt");
+            system("ln", '-s', "$keys_directory/sign.$file_time.crt", "$keys_directory/sign.crt");
 
-            } else {
-                self_sign_key($sc->config, "$keys_directory/sign.key", "$keys_directory/sign.@{[strftime('%F-%I.%M.%S.%p', localtime($time))]}.crt")
+            self_sign_key(
+                $ec->config(force => 1), 
+                "$keys_directory/enc.key", 
+                "$keys_directory/enc.$file_time.crt",
+            );
+            system("rm", "$keys_directory/enc.crt");
+            system("ln", '-s', "$keys_directory/enc.$file_time.crt", "$keys_directory/enc.crt");
+            print "[info] new certificate generated for @{[$sc->common_name]} (@{[$sc->thumbprint]})\n";
+        } elsif ($gen_new_keys) {
+            my $key_config = $sc->config(force => 1);
+            if ($entity_id) {
+                $key_config->{common_name} = $entity_id;
             }
-        }
-    }
+            gen_rsa_keys(
+                $key_config,
+                "$keys_directory/sign.$file_time.key",
+                "$keys_directory/sign.$file_time.crt",
+            );
+            system("rm", "$keys_directory/sign.crt");
+            system("rm", "$keys_directory/sign.key");
+            system("ln", '-s', "$keys_directory/sign.$file_time.crt", "$keys_directory/sign.crt");                
+            system("ln", '-s', "$keys_directory/sign.$file_time.key", "$keys_directory/sign.key");
 
-    $cn = "urn:uuid:" . new_uuid();
+            $key_config->{type} = "enc";
+            gen_rsa_keys(
+                $key_config,
+                "$keys_directory/enc.$file_time.key",
+                "$keys_directory/enc.$file_time.crt",
+            );
+            system("rm", "$keys_directory/enc.crt");
+            system("rm", "$keys_directory/enc.key");
+            system("ln", '-s', "$keys_directory/enc.$file_time.crt", "$keys_directory/enc.crt");                
+            system("ln", '-s', "$keys_directory/enc.$file_time.key", "$keys_directory/enc.key");
+
+            $sc = OSiRIS::AccessAssertion::Certificate->new("$keys_directory/sign.crt");
+            print "[info] new private keys and certificates generated for @{[$sc->common_name]} (@{[$sc->thumbprint]})\n";
+        } else {
+            print "[info] keys exist for @{[$sc->common_name]} (@{[$sc->thumbprint]})\n";
+            print "       specify --gen-new-keys or --refresh-cert to update existing keys\n";
+            exit();
+        }
+    } else {
+        # config for the signing key first.
+        my $key_config = {
+            common_name => $entity_id ? $entity_id : "urn:uuid:@{[new_uuid()]}",
+            type => "sign",
+        };
+        foreach my $opt (qw/ country state locality organization organizational_unit email_address /) {
+           if (exists $config->{$opt} && $config->{$opt}) {
+               $key_config->{$opt} = $config->{$opt};
+           }
+        }
+
+        if (exists $config->{rsa_key_size} && $config->{rsa_key_size}) {
+           $key_config->{bits} = $config->{rsa_key_size};
+        }
+
+        if (exists $config->{rsa_cert_validity} && $config->{rsa_cert_validity}) {
+           $key_config->{days} = $config->{rsa_cert_validity};
+        }
+
+        gen_rsa_keys(
+            $key_config,
+            "$keys_directory/sign.$file_time.key",
+            "$keys_directory/sign.$file_time.crt",
+        );
+        system("ln", '-s', "$keys_directory/sign.$file_time.crt", "$keys_directory/sign.crt");                
+        system("ln", '-s', "$keys_directory/sign.$file_time.key", "$keys_directory/sign.key");
+
+        # now make the encryption key, everything can be the same except the type
+        $key_config->{type} = "enc";
+        gen_rsa_keys(
+            $key_config,
+            "$keys_directory/enc.$file_time.key",
+            "$keys_directory/enc.$file_time.crt",
+        );
+        system("ln", '-s', "$keys_directory/enc.$file_time.crt", "$keys_directory/enc.crt");                
+        system("ln", '-s', "$keys_directory/enc.$file_time.key", "$keys_directory/enc.key");
+
+        # grab this so we can print the thumbprint
+        $sc = OSiRIS::AccessAssertion::Certificate->new("$keys_directory/sign.crt");
+        print "[info] new private keys and certificates generated for @{[$sc->common_name]} (@{[$sc->thumbprint]})\n";
+    }
+}
+
+sub c_genkeys_usage {
+    return <<"EOF";
+
+Usage: $0 genkeys [OPTIONS]
+
+These options are available for 'genkeys':
+    -d, --key-directory     Store / look for keys in this directory instead of the 
+                            default location ($ENV{AA_HOME}/etc/keys)
+    -e, --entity-id         Hard specifiy the entity_id to use, do not automatically
+                            generate a UUID-based commonName for this key pair
+    -h, --help              Show usage information
+
+One of these parameters may also be specified:
+    -r, --refresh-cert      Refresh the existing self signed certificate using the 
+                            configuration of the existing certificate
+    -g, --gen-new-keys      Generate a new private key and sign it using the
+                            configuration of the existing certificate
+
+EOF
+}
+
+sub usage {
+    return <<"EOF";
+Usage: $0 [SUBCOMMAND]
+
+These subcomands are available for '$0':
+    genkeys                 Generate, sign, or refresh certificates for keys
+
+EOF
 }

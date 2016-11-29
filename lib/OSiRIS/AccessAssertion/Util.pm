@@ -185,7 +185,7 @@ sub _config_openssl_and_run {
     } else {
         print $ossl_cfg "keyUsage = digitalSignature, nonRepudiation, dataEncipherment\n";
     }
-    print "\n";
+    print $ossl_cfg "\n";
 
     print $ossl_cfg "[ req_distinguished_name ]\n";
     print $ossl_cfg "C=$config->{country}\n";
