@@ -31,8 +31,7 @@ eval {
     &{"main::c_$command"}()
 };
 
-if ($@ =~ /^Undefined subroutine/) {
-    print "Psst.. $@\n";
+if ($@ =~ /^\QUndefined subroutine &main::c_\E/) {
     die usage();
 } elsif ($@) {
     die $@;
