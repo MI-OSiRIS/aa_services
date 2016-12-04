@@ -19,7 +19,7 @@ package OSiRIS::AccessAssertion::Certificate;
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-use OSiRIS::AccessAssertion::Util qw/slurp b64_decode b64u_decode b64u_encode monkey_patch/;
+use OSiRIS::AccessAssertion::Util qw/slurp b64_encode b64_decode b64u_decode b64u_encode monkey_patch/;
 use Mojo::Base 'Crypt::X509';
 use Crypt::PK::RSA;
 use Carp 'croak';
@@ -222,6 +222,7 @@ sub to_der {
 
 sub _harness {
     my ($b64, $type) = @_;
+    no warnings 'substr';
     return undef unless $type;
 
     # just make sure it's upper case

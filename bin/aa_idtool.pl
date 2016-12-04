@@ -5,7 +5,7 @@
 # tool as part of the development process to create and manage keys generically.
 #
 
-use OSiRIS::AccessAssertion::Certificate;
+use OSiRIS::AccessAssertion::Certificate 'harness';
 use OSiRIS::AccessAssertion::Key;
 use OSiRIS::AccessAssertion::Util qw/gen_rsa_keys new_uuid self_sign_key/;
 use OSiRIS::Config;
@@ -37,11 +37,167 @@ if ($@ =~ /^\QUndefined subroutine &main::c_\E/) {
     die $@;
 }
 
+#
+# Subcommand: keyinfo
+#
+
+sub c_keyinfo {
+    GetOptions(
+        'd|key-directory' => \my $keys_directory,
+        'v|verbose' => \my $verbose,
+        'e|export-pem' => \my $export_pem,
+        'j|export-jwk' => \my $export_jwk,
+        's|export-secret-keys' => \my $export_secret_keys,
+        'h|help' => \my $help,
+    );
+
+    if ($help) {
+        print c_keyinfo_usage();
+        exit();
+    }
+
+    unless ($keys_directory) {
+        $keys_directory = "$ENV{AA_HOME}/etc/keys";
+    }
+
+    if (   
+      -e "$keys_directory/sign.crt" &&
+      -e "$keys_directory/sign.key" &&
+      -e "$keys_directory/enc.crt" &&
+      -e "$keys_directory/enc.key") {
+      
+        if ($verbose) {
+            if (-l "$keys_directory/sign.crt") {
+                print "[info] loading signing certificate from $keys_directory/sign.crt\n";
+                print "       sign.crt is a link to " . readlink("$keys_directory/sign.crt") . "\n";
+            }
+
+            if (-l "$keys_directory/sign.key") {
+                print "[info] loading signing secret key from $keys_directory/sign.key\n";
+                print "       sign.key is a link to " . readlink("$keys_directory/sign.key") . "\n";
+            }
+
+            if (-l "$keys_directory/enc.crt") {
+                print "[info] loading encryption certificate from $keys_directory/enc.crt\n";
+                print "       sign.crt is a link to " . readlink("$keys_directory/enc.crt") . "\n";
+            }
+
+            if (-l "$keys_directory/sign.key") {
+                print "[info] loading encryption secret key from $keys_directory/enc.key\n";
+                print "       sign.key is a link to " . readlink("$keys_directory/enc.key") . "\n";
+            }
+        }
+
+        # signing pair
+        my $sc = OSiRIS::AccessAssertion::Certificate->new("$keys_directory/sign.crt");
+        my $sk = OSiRIS::AccessAssertion::Key->new({ cert => $sc, file => "$keys_directory/sign.key"});
+
+        # crypto pair
+        my $ec = OSiRIS::AccessAssertion::Certificate->new("$keys_directory/enc.crt");
+        my $ek = OSiRIS::AccessAssertion::Key->new({ cert => $ec, file => "$keys_directory/enc.key"});
+
+        print "\nKey Information\n";
+        print "-----------------------------------------------------------------\n";
+        if ($sc->common_name eq $ec->common_name) {
+            print "Entity ID         : " . $sc->common_name . "\n";
+        } else {
+            die "CN of signing and encryption certificates differs.  Bad keypair!\n";
+        }
+        print "JWK Thumbprint    : " . $sc->thumbprint . "\n";
+        
+        foreach my $namepart (qw/org ou email locality state country/) {
+            my $method = "subject_$namepart";
+            my $label = ucfirst($namepart) . (" " x (18 - length($namepart))) . ": ";
+            print $label . $sc->$method . "\n";;
+        }
+        
+        if (scalar(@{$sc->SubjectAltName})) {
+            my @sans = map { s/dNSName=/DNS:/g && $_ } @{$sc->SubjectAltName};
+            print "Subject Alt Names : $sans[0]\n";
+            foreach my $san (@sans[1..$#sans]) {
+                print " " x 18 . ": $san\n";
+            }
+        }
+
+        print "Valid Until (sig) : " . scalar localtime($sc->not_after) . "\n";
+        print "Valid Until (enc) : " . scalar localtime($ec->not_after) . "\n";
+        print "\n";
+
+        if ($export_jwk) {
+            print "JWK Export\n";
+            print "-----------------------------------------------------------------\n";
+            print "[signing public jwk]\n";
+            print $sc->pubkey->export_key_jwk('public');
+            print "\n\n[encryption public jwk]\n";
+            print $ec->pubkey->export_key_jwk('public');
+            if ($export_secret_keys) {
+                print "\n\n[signing secret jwk]\n";
+                print $sk->export_key_jwk('private');
+                print "\ n\n[encryption secret jwk]\n";
+                print $ek->export_key_jwk('private');
+            }
+            print "\n\n";
+        }
+
+        if ($export_pem) {
+            print "PEM Export\n";
+            print "-----------------------------------------------------------------\n";
+            print "[signing certificate]\n";
+            print $sc->to_pem;
+            print "\n\n[encryption certificate]\n";
+            print $ec->to_pem;
+            print "\n\n[signing public key]\n";
+            print $sc->pubkey->export_key_pem('public');
+            print "\n\n[encryption public key]\n";
+            print $ec->pubkey->export_key_pem('public');
+            if ($export_secret_keys) {
+                print "\n\n[signing secret key]\n";
+                print $sk->export_key_pem('private');
+                print "\n\n[encryption secret key]\n";
+                print $ek->export_key_pem('private');
+            }
+            print "\n\n";
+        }
+    } else {
+        print "[info] signing and encryption keys not found in '$keys_directory'\n";
+    }
+}
+
+sub c_keyinfo_usage {
+    return <<"EOF";
+
+Usage: $0 keyinfo [OPTIONS]
+
+These options are available for 'keyinfo':
+    -d, --key-directory      Store / look for keys in this directory instead of the 
+                             default location ($ENV{AA_HOME}/etc/keys)
+    -e, --export-pem         Print certificates and public keys to STDOUT in PEM 
+                             format
+    -j, --export-jwk         Print public keys to STDOUT in JWK format
+    -s, --export-secret-keys Also include secret keys when using the -e or -j options
+    -h, --help               Show usage information
+    -v, --verbose            Print extra information
+
+EOF
+}
+
+sub usage {
+    return <<"EOF";
+Usage: $0 [SUBCOMMAND]
+
+These subcomands are available for '$0':
+    genkeys                 Generate, sign, or refresh certificates for keys
+    keyinfo                 Print information about the current key set
+
+EOF
+}
+
 sub c_genkeys {
     GetOptions(
         'd|key-directory' => \my $keys_directory,
         'r|refresh-cert' => \my $refresh_cert,
         'g|gen-new-keys' => \my $gen_new_keys,
+        'p|preserve-eid' => \my $preserve_entity_id,
         'e|entity-id=s' => \my $entity_id,
         'h|help' => \my $help,        
     );
@@ -77,16 +233,18 @@ sub c_genkeys {
         $ek = OSiRIS::AccessAssertion::Key->new({ cert => $ec, file => "$keys_directory/enc.key"});
 
         if ($refresh_cert) {
+            my $key_config = $sc->config(force => 1, type => "sig");
             self_sign_key(
-                $sc->config(force => 1), 
+                $key_config, 
                 "$keys_directory/sign.key", 
                 "$keys_directory/sign.$file_time.crt",
             );
             system("rm", "$keys_directory/sign.crt");
             system("ln", '-s', "$keys_directory/sign.$file_time.crt", "$keys_directory/sign.crt");
 
+            $key_config->{type} = "enc";
             self_sign_key(
-                $ec->config(force => 1), 
+                $key_config, 
                 "$keys_directory/enc.key", 
                 "$keys_directory/enc.$file_time.crt",
             );
@@ -94,10 +252,23 @@ sub c_genkeys {
             system("ln", '-s', "$keys_directory/enc.$file_time.crt", "$keys_directory/enc.crt");
             print "[info] new certificate generated for @{[$sc->common_name]} (@{[$sc->thumbprint]})\n";
         } elsif ($gen_new_keys) {
-            my $key_config = $sc->config(force => 1);
-            if ($entity_id) {
-                $key_config->{common_name} = $entity_id;
+            # clobber the configuration in the certificate if we're generating new keys.
+            my $key_config = {
+                common_name => $entity_id ? $entity_id : "urn:uuid:@{[new_uuid()]}",
+                type => "sig",
+            };
+            
+            if ($preserve_entity_id && !$entity_id) {
+                $key_config->{common_name} = $sc->common_name;
             }
+            
+            foreach my $opt (qw/ country state locality organization organizational_unit 
+              email_address subject_alternate_names /) {
+               if (exists $config->{$opt} && $config->{$opt}) {
+                   $key_config->{$opt} = $config->{$opt};
+               }
+            }
+
             gen_rsa_keys(
                 $key_config,
                 "$keys_directory/sign.$file_time.key",
@@ -130,9 +301,10 @@ sub c_genkeys {
         # config for the signing key first.
         my $key_config = {
             common_name => $entity_id ? $entity_id : "urn:uuid:@{[new_uuid()]}",
-            type => "sign",
+            type => "sig",
         };
-        foreach my $opt (qw/ country state locality organization organizational_unit email_address /) {
+        foreach my $opt (qw/ country state locality organization organizational_unit 
+          email_address subject_alternate_names /) {
            if (exists $config->{$opt} && $config->{$opt}) {
                $key_config->{$opt} = $config->{$opt};
            }
@@ -181,12 +353,15 @@ These options are available for 'genkeys':
     -e, --entity-id         Hard specifiy the entity_id to use, do not automatically
                             generate a UUID-based commonName for this key pair
     -h, --help              Show usage information
+    -p, --preserve-eid      When using --gen-new-keys, uses the Entity ID from the
+                            existing certificate.  Specifying --entity-id explicitly
+                            will override this option.
 
 One of these parameters may also be specified:
     -r, --refresh-cert      Refresh the existing self signed certificate using the 
                             configuration of the existing certificate
-    -g, --gen-new-keys      Generate a new private key and sign it using the
-                            configuration of the existing certificate
+    -g, --gen-new-keys      Generate a new private key and sign it using config in
+                            $ENV{AA_HOME}/etc/aa_services.conf 
 
 EOF
 }
@@ -197,6 +372,7 @@ Usage: $0 [SUBCOMMAND]
 
 These subcomands are available for '$0':
     genkeys                 Generate, sign, or refresh certificates for keys
+    keyinfo                 Print information about the current key set
 
 EOF
 }

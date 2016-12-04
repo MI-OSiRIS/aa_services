@@ -1,5 +1,5 @@
 //
-// Schema Definition of an OSiRIS Access Grant
+// Schema Definition of an OSiRIS Access Grant (OAG)
 // 
 {
     "title": "OSiRIS Access Grant",

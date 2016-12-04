@@ -176,14 +176,23 @@ sub _config_openssl_and_run {
     print $ossl_cfg "extendedKeyUsage=1.3.5.1.3.1.17128.313\n";
     if (exists($config->{type}) && $config->{type}) {
         if ($config->{type} eq "sig") {
-            print $ossl_cfg "keyUsage = digitalSignature, nonRepudiation\n";
+            print $ossl_cfg "keyUsage = digitalSignature\n";
         } elsif ($config->{type} eq "enc") {
             print $ossl_cfg "keyUsage = dataEncipherment\n";
         } else {
-            print $ossl_cfg "keyUsage = digitalSignature, nonRepudiation, dataEncipherment\n";
+            print $ossl_cfg "keyUsage = digitalSignature, dataEncipherment\n";
         }
     } else {
-        print $ossl_cfg "keyUsage = digitalSignature, nonRepudiation, dataEncipherment\n";
+        print $ossl_cfg "keyUsage = digitalSignature, dataEncipherment\n";
+    }
+
+    # include subjectAlternateNames if they're defined in the config
+    if (exists($config->{subject_alternate_names}) && ref $config->{subject_alternate_names} eq "ARRAY") {
+        print $ossl_cfg "subjectAltName = \@alt_names\n";
+        print $ossl_cfg "\n[ alt_names ]\n";
+        for (my $i = 1; $i <= scalar(@{$config->{subject_alternate_names}}); $i++) {
+            print $ossl_cfg "DNS.$i = $config->{subject_alternate_names}->[$i - 1]\n";
+        }
     }
     print $ossl_cfg "\n";
 
@@ -199,6 +208,7 @@ sub _config_openssl_and_run {
     if (ref $cb eq "CODE") {
         $cb->($config);
     }
+    
     unlink("/tmp/osiris_openssl_config.$$.conf") if -e "/tmp/osiris_openssl_config.$$.conf";
 }
 

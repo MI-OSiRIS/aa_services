@@ -1,39 +1,46 @@
 //
-// Schema Definition of an OSiRIS Access Request (OAR)
+// Schema Definition of an OSiRIS Access Token (OAT)
 // 
 {
-    "title": "OSiRIS Access Request",
+    "title": "OSiRIS Access Token",
     "type": "object",
     "version": "0.1",
     "properties": {
         "iss": {
             "type": "string",
-            "description": "a unique identifier for the issuer of the request (url, urn:oid, etc)"
+            "description": "a unique identifier for the issuer of the grant (url, urn:oid, etc)"
+        },
+        "irt": {
+            "type": "string",
+            "description": "the unique identifier of the OAR this OAG is In Response To"
         },
         "jti": {
             "type": "string",
-            "description": "a unique identifier for the request itself"
+            "description": "a unique identifier for the grant itself"
         },
         "iat": {
             "type": "integer",
-            "description": "the unix timestamp of the time this request was created ('valid not before')"
+            "description": "the unix timestamp of the time this grant becomes valid ('valid not before')"
         },
         "exp": {
             "type": "integer",
-            "description": "a unix timestamp of the time where this request becomes invalid ('valid not after')"
+            "description": "a unix timestamp of the time where this grant becomes invalid ('valid not after')"
         },
         "sub": {
             "type": ["string", "array"],
-            "description": "the principal or principals (subjects) this request is made on behalf of"
+            "description": "the principal or principals (subjects) this grant is made for"
         },
         "aud": {
             "type": ["string", "array"],
-            "description": "the resource provider or providers (audience) this request is made to"
+            "description": "the service or services this grant is made to (Usually an entity that forms and stores OAAs)"
         },
         "access": {
             "type": "array",
         },
         "resources": {
+            "type": "array",
+        },
+        "assertions": {
             "type": "array",
         },
         "_sk": {
@@ -45,5 +52,5 @@
             "description": "symmetric session key encrypted base64url encoded block of JSON to be evaluated as if it were interposed literally after the previous entry and before the next entry in the current lexical scope.  The first 24 bytes are the nonce."
         },
     },
-    "required": ["iss", "jti", "iat", "exp", "sub", "aud", "access", "resources"]
+    "required": ["iss", "irt", "jti", "iat", "exp", "sub", "aud", "access", "assertions", "resources"]
 }
