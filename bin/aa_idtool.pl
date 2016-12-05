@@ -5,8 +5,8 @@
 # tool as part of the development process to create and manage keys generically.
 #
 
-use OSiRIS::AccessAssertion::Certificate 'harness';
-use OSiRIS::AccessAssertion::Key;
+use OSiRIS::AccessAssertion::RSA::Certificate 'harness';
+use OSiRIS::AccessAssertion::RSA::Key;
 use OSiRIS::AccessAssertion::Util qw/gen_rsa_keys new_uuid self_sign_key/;
 use OSiRIS::Config;
 use POSIX 'strftime';
@@ -89,12 +89,12 @@ sub c_keyinfo {
         }
 
         # signing pair
-        my $sc = OSiRIS::AccessAssertion::Certificate->new("$keys_directory/sign.crt");
-        my $sk = OSiRIS::AccessAssertion::Key->new({ cert => $sc, file => "$keys_directory/sign.key"});
+        my $sc = OSiRIS::AccessAssertion::RSA::Certificate->new("$keys_directory/sign.crt");
+        my $sk = OSiRIS::AccessAssertion::RSA::Key->new({ cert => $sc, file => "$keys_directory/sign.key"});
 
         # crypto pair
-        my $ec = OSiRIS::AccessAssertion::Certificate->new("$keys_directory/enc.crt");
-        my $ek = OSiRIS::AccessAssertion::Key->new({ cert => $ec, file => "$keys_directory/enc.key"});
+        my $ec = OSiRIS::AccessAssertion::RSA::Certificate->new("$keys_directory/enc.crt");
+        my $ek = OSiRIS::AccessAssertion::RSA::Key->new({ cert => $ec, file => "$keys_directory/enc.key"});
 
         print "\nKey Information\n";
         print "-----------------------------------------------------------------\n";
@@ -225,12 +225,12 @@ sub c_genkeys {
     my ($sc, $sk, $ec, $ek);
     if ($link_count == 4) {
         # signing pair
-        $sc = OSiRIS::AccessAssertion::Certificate->new("$keys_directory/sign.crt");
-        $sk = OSiRIS::AccessAssertion::Key->new({ cert => $sc, file => "$keys_directory/sign.key"});
+        $sc = OSiRIS::AccessAssertion::RSA::Certificate->new("$keys_directory/sign.crt");
+        $sk = OSiRIS::AccessAssertion::RSA::Key->new({ cert => $sc, file => "$keys_directory/sign.key"});
 
         # crypto pair
-        $ec = OSiRIS::AccessAssertion::Certificate->new("$keys_directory/enc.crt");
-        $ek = OSiRIS::AccessAssertion::Key->new({ cert => $ec, file => "$keys_directory/enc.key"});
+        $ec = OSiRIS::AccessAssertion::RSA::Certificate->new("$keys_directory/enc.crt");
+        $ek = OSiRIS::AccessAssertion::RSA::Key->new({ cert => $ec, file => "$keys_directory/enc.key"});
 
         if ($refresh_cert) {
             my $key_config = $sc->config(force => 1, type => "sig");
@@ -290,7 +290,7 @@ sub c_genkeys {
             system("ln", '-s', "$keys_directory/enc.$file_time.crt", "$keys_directory/enc.crt");                
             system("ln", '-s', "$keys_directory/enc.$file_time.key", "$keys_directory/enc.key");
 
-            $sc = OSiRIS::AccessAssertion::Certificate->new("$keys_directory/sign.crt");
+            $sc = OSiRIS::AccessAssertion::RSA::Certificate->new("$keys_directory/sign.crt");
             print "[info] new private keys and certificates generated for @{[$sc->common_name]} (@{[$sc->thumbprint]})\n";
         } else {
             print "[info] keys exist for @{[$sc->common_name]} (@{[$sc->thumbprint]})\n";
@@ -337,7 +337,7 @@ sub c_genkeys {
         system("ln", '-s', "$keys_directory/enc.$file_time.key", "$keys_directory/enc.key");
 
         # grab this so we can print the thumbprint
-        $sc = OSiRIS::AccessAssertion::Certificate->new("$keys_directory/sign.crt");
+        $sc = OSiRIS::AccessAssertion::RSA::Certificate->new("$keys_directory/sign.crt");
         print "[info] new private keys and certificates generated for @{[$sc->common_name]} (@{[$sc->thumbprint]})\n";
     }
 }

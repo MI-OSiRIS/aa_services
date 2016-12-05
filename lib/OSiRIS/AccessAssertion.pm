@@ -45,8 +45,9 @@ ultra fast resources?!  That'd be awesome.
 use Mojo::Base -base;
 use Mojo::Log;
 use OSiRIS::Config;
-use OSiRIS::AccessAssertion::Certificate;
-use OSiRIS::AccessAssertion::Key;
+use OSiRIS::Model;
+use OSiRIS::AccessAssertion::RSA::Certificate;
+use OSiRIS::AccessAssertion::RSA::Key;
 use OSiRIS::AccessAssertion::Util qw/b64u_decode b64u_encode encode_json digest_data gen_rsa_keys slurp/;
 use Carp qw/croak confess/;
 use JSON::Validator;

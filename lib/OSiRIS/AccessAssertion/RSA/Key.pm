@@ -1,4 +1,4 @@
-package OSiRIS::AccessAssertion::Key;
+package OSiRIS::AccessAssertion::RSA::Key;
 
 # Class that encapsulates an RSA key used for creating OSiRIS Access 
 # Assertions
@@ -22,7 +22,7 @@ package OSiRIS::AccessAssertion::Key;
 use Mojo::Base 'Crypt::PK::RSA';
 use Carp qw/croak/;
 use OSiRIS::AccessAssertion::Util qw/b64u_decode b64u_encode encode_json digest_data monkey_patch/;
-use OSiRIS::AccessAssertion::Certificate;
+use OSiRIS::AccessAssertion::RSA::Certificate;
 
 # since our object's a scalar ref, we can store our corresponding certificates here in this
 # global hash
@@ -42,8 +42,8 @@ sub new {
 
         # the cert has info about our capabilities, so if it was specified along side us let's stash it.
         if (my $cert = delete $arg->{cert}) {
-            unless (ref($cert) eq "OSiRIS::AccessAssertion::Certificate") {
-                $cert = OSiRIS::AccessAssertion::Certificate->new($cert);
+            unless (ref($cert) eq "OSiRIS::AccessAssertion::RSA::Certificate") {
+                $cert = OSiRIS::AccessAssertion::RSA::Certificate->new($cert);
             }
             $self->cert($cert);
         }

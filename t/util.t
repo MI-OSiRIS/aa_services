@@ -37,9 +37,9 @@ my ($key_file, $cert_file) = gen_rsa_keys({
     force => 1,
 }, '/tmp/test.key', '/tmp/test.crt');
 
-use_ok("OSiRIS::AccessAssertion::Certificate");
+use_ok("OSiRIS::AccessAssertion::RSA::Certificate");
 
-my $rsa_cert = OSiRIS::AccessAssertion::Certificate->new($cert_file);
+my $rsa_cert = OSiRIS::AccessAssertion::RSA::Certificate->new($cert_file);
 ok($rsa_cert->subject_locality eq "Hell", "sanity checking gen_rsa_keys");
 
 unlink('/tmp/test.key');

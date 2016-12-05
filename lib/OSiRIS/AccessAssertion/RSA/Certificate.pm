@@ -1,4 +1,4 @@
-package OSiRIS::AccessAssertion::Certificate;
+package OSiRIS::AccessAssertion::RSA::Certificate;
 
 # Class that encapsulates an RSA certificate used for validating
 # OSiRIS Access Assertions
