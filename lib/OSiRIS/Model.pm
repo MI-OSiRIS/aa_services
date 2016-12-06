@@ -1,5 +1,9 @@
 package OSiRIS::Model;
 
+# install the schema
+# dbic-migration -S OSiRIS::Model --dsn dbi:SQLite:dbname=$AA_HOME/var/aa_services.dat --target_dir /tmp/migration prepare
+# dbic-migration -S OSiRIS::Model --dsn dbi:SQLite:dbname=$AA_HOME/var/aa_services.dat --target_dir /tmp/migration install
+
 use base qw/DBIx::Class::Schema/;
 
 # versioned schemas.

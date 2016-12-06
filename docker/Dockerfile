@@ -17,7 +17,8 @@ RUN echo " #### INSTALLING DISTRO SUPPLIED DEPENDENCIES #### " && \
 RUN echo " #### BUILDING CPAN DEPENDENCIES #### " && \
  cpanm --notest Crypt::Sodium CryptX Number::Bytes::Human Date::Parse Mojolicious \
   Unix::Uptime Mojo::Pg CGI XML::CanonicalizeXML Minion Log::Syslog::Fast \
-  Net::Netmask Mail::Sender BSD::Resource Linux::Inotify2 App::Prove App::cpanminus
+  Net::Netmask Mail::Sender BSD::Resource Linux::Inotify2 App::Prove App::cpanminus \
+  DBIx::Class DBIx::Class::Migration
 
 # create an oaasvc user
 RUN useradd -d /opt/osiris/aa_services -s /bin/bash -c "OSiRIS AA Services" -m oaasvc
