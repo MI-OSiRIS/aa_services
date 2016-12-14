@@ -8,8 +8,10 @@
  * Facilitates matchmaking / pairing up of _Resource Users_ with _Resource Providers_
  * Allows the formation of roles and groups for convenience 
  * Facilitates the safe keeping of Access Assertions (OAAs) long term
-* Resource User - An individual or group of individuals that wants to have or currently has access to a resource pvoided by a _Resource Provider_
-* Resource Provider - A system capable of providing certain types of services to _Resource Users_. 
+* Resource Requestor - An individual or group of individuals wanting to have resources provisioned that do not already exist
+* Resource User - An individual or group of individuals that wants to have or currently has access to a resource provided by a _Resource Provider_
+* Resource Provider - A system capable of providing certain types of services to _Resource Requestors_ and _Resource Users_. 
+* Resource Owner - An individual or group of individuals who requested resources be provisioned, and subsequently had that request granted
 
 * OSiRIS Token Types
  * _OSiRIS Access Request (OAR)_ - Issued by _Central Authority_ `oakd` to one or more _Resource Authorities_ `stpd` to provision services and receive an...
@@ -23,6 +25,10 @@
 * Resource providers may set their own terms for resources allocated by them
 * Allows codification of many different types of access
 * Doesn't require a RDBMs or complicated database schema to know who is who, and who gets access to what.  Everything any participating system or user needs to know is codified within the bearer token and accessible only by the parties that have the encryption keys for the fragments.
+* Fine-grained control over service level expectations
+ * Run of the mill availability levels e.g. 99.99% uptime
+ * Well definined minimum service levels say "100Mbps guaranteed from disk on Network A to Network B"
+ * Well defined penalties, fees, or refunds in the event that service levels are not maintained, 99.98% availablility = 10% refund
 
 ## Authority Types
 
@@ -205,6 +211,54 @@ The header should state the type of token this is, using `OAR` for Access Reques
             // the label is what we call this access (required)
             "label": "shell-account",
 
+            // requested / required availability for this access
+            "service_level": [
+                {
+                    "src": "141.217.0.0/16",
+                    "dst": "192.168.10.0/24",
+                    
+                    // guarantee 4 9's of uptime between these networks
+                    "uptime": 0.9999,
+                    
+                    // a third party arbitrator can be specified to monitor availability
+                    "arbitrator" {
+                        "src": "141.217.4.64",
+                        "ssh_pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBQ2t/mwgJm3/uLJ9oyjOquxSivIeuOOTlbo/LwXNSA2 mikeyg@keep.local"
+                    },
+                    
+                    // written in cron time + duration, this is Sundays between midnight and 4AM
+                    // these dont count against availability
+                    "maintenance_schedule": "* * 0 * * 0 +4h"
+                },
+                {
+                    "src": "141.217.0.0/16",
+                    "dst": "0.0.0.0/0",
+                    // expected throughput between these networks in kbps (1Gbps)
+                    "nominal_throughput": 1000000,
+                    // minimum throughput between these networks in kbps (100Mbps)
+                    "minimum_throughput": 100000,
+
+                    // a third party arbitrator can be specified to monitor throughput
+                    "arbitrator" {
+                        "src": "141.217.4.64",
+                        "exec": "iperf3 -c 141.217.4.64 -t 2 -p 4567",
+                        "ssh_pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBQ2t/mwgJm3/uLJ9oyjOquxSivIeuOOTlbo/LwXNSA2 mikeyg@keep.local"
+                    },
+
+                    // written in cron time + duration, this is Sundays between midnight and 4AM
+                    // exceptions that occur during this period dont count.
+                    "maintenance_schedule": "* * 0 * * 0 +4h"
+                }   
+            ],
+
+            // can specify penalties that correspond to violations in the service
+            // levels defined above, use 'null' for no enforcement.  these can be plain language,
+            // code, or a number which represents a % of a discount of the monthly fee per violation
+            "penalty": [
+                null,
+                null
+            ],
+
             // if present it means only these RPs should consider this but
             // say we know these resources offer shell accounts
             // portion of the OAR (optional)
@@ -279,6 +333,24 @@ and/or the removal of session encryption key happens before the user has a chanc
 
 This puts expiry time frames for OAGs in the "months/years" range, but none the less they should eventually 
 expire.
+
+#### For Already Provisioned Services
+
+If the rules outlined in the _OAR_ that provisioned the service allow the _Resource User_s scope, affiliation,
+membership status in COmanage, or other attributes on hand to dictate the terms of access, then the 
+_Resource Provider_ will take the necessary steps to configure the system for this _Resource User_, and 
+deliver the OAG back to the `Central Authority`.  Otherwise, this may kick off an approval process whereby
+the _Resource Owner_ is notified of the request.  If the approval process is followed through to completion
+then the result should be the generation of an _OAG_ for the _Resource User_.
+
+#### For Yet To Be Provisioned Services
+
+Since it's also (kind of) a negotiation of the terms of the level of service, an `OAG` may include service_level 
+counter-offers.  If the _OAG_s `service_level` and penalty parameters do not match those included in the _OAR_
+it is up to the `Central Authority` to make those descrepancies known to the user.  If the user agrees to the 
+counter-offer then the _OAG_ may be used to create an _OAA_, at which point the terms outlined in the _OAG_ are
+the official terms of the engagement.  If the _Resource Requestor_ does not agree to the new terms, then the 
+`Central Authority` must start over, issuing a new _OAR_ on the _Resource Requestor_s behalf.
 
 ```
 {
