@@ -761,7 +761,7 @@ In any case, the _Resource Provider_ needs to see the _OAA_ before the grant exp
 
 The `Central Authority` unpacks the credentials stored in the grant by obtaining the session key, decrypting it
 with its private key, and then decrypting the credential payload.  It then feeds those credentials over a TLS 
-secured connection to an agent running on the _Resource User_s host.  The agent uses native utilities, ssh, fuse,
+secured connection to an agent running on the _Resource User_'s host.  The agent uses native utilities, ssh, fuse,
 mount.ceph, mount.nfs, what have you, to configure that access.
 
 The agent becomes a watchdog, remaining in constant communication with the `Central Authority`.  Watching for 
@@ -772,4 +772,4 @@ and providing us with debug output to improve services.
 
 A web interface will be included as part of `oakd` that allows for
  * Listing and managing OAAs that belong to you
- * Lightweight workflow/approval queues for _Resource User_s
+ * Lightweight workflow/approval queues for _Resource Users_
