@@ -2,16 +2,16 @@
 
 ## Glossary
 
-* Central Authority - A Service that:
+* **Central Authority** - A Service that:
  * Maintains a database of registered _Resource Providers_
  * Interfaces with identity providers to authenticate _Resource Users_
  * Facilitates matchmaking / pairing up of _Resource Users_ with _Resource Providers_
  * Allows the formation of roles and groups for convenience 
  * Facilitates the safe keeping of Access Assertions (OAAs) long term
-* Resource Requestor - An individual or group of individuals wanting to have resources provisioned that do not already exist
-* Resource User - An individual or group of individuals that wants to have or currently has access to a resource provided by a _Resource Provider_
-* Resource Provider - A system capable of providing certain types of services to _Resource Requestors_ and _Resource Users_. 
-* Resource Owner - An individual or group of individuals who requested resources be provisioned, and subsequently had that request granted
+* **Resource Requestor** - An individual or group of individuals wanting to have resources provisioned that do not already exist
+* **Resource User** - An individual or group of individuals that wants to have or currently has access to a resource provided by a _Resource Provider_
+* **Resource Provider** - A system capable of providing certain types of services to _Resource Requestors_ and _Resource Users_. 
+* **Resource Owner** - An individual or group of individuals who requested resources be provisioned, and subsequently had that request granted
 
 * OSiRIS Token Types
  * _OSiRIS Access Request (OAR)_ - Issued by _Central Authority_ `oakd` to one or more _Resource Authorities_ `stpd` to provision services and receive an...
@@ -433,8 +433,8 @@ explicitly point out what parts of the OAR it refused or had problems facilitati
 the OAG should encrypt sensitive information it needs for itself with a symmetric key known only to itself.
 
 A new symmetric key should be created for every OAG ID and stored in a local database of keys until the OAG
-itself expires.  _OAG_s may be renewed / refreshed as part of the refresh process done in an _ORT_, therefore
-expiry times on _OAG_s should be slightly longer than the refresh time of _ORT_s, else the deprovision actions
+itself expires.  _OAG_ asserions may be renewed / refreshed as part of the refresh process done in an _ORT_, therefore
+expiry times on _OAG_ should be slightly longer than the refresh time of _ORT_ assertions, else the deprovision actions
 and/or the removal of session encryption key happens before the user has a chance to refresh their _OAG_.
 
 This puts expiry time frames for OAGs in the "months/years" range, but none the less they should eventually 
@@ -442,7 +442,7 @@ expire.
 
 #### For Already Provisioned Services
 
-If the rules outlined in the _OAR_ that provisioned the service allow the _Resource User_s scope, affiliation,
+If the rules outlined in the _OAR_ that provisioned the service allow the _Resource User_ scope, affiliation,
 membership status in COmanage, or other attributes on hand to dictate the terms of access, then the 
 _Resource Provider_ will take the necessary steps to configure the system for this _Resource User_, and 
 deliver the OAG back to the `Central Authority`.  Otherwise, this may kick off an approval process whereby
@@ -452,11 +452,11 @@ then the result should be the generation of an _OAG_ for the _Resource User_.
 #### For Yet To Be Provisioned Services
 
 Since it's also (kind of) a negotiation of the terms of the level of service, an `OAG` may include service_level 
-counter-offers.  If the _OAG_s `service_level` and penalty parameters do not match those included in the _OAR_
+counter-offers.  If the _OAG_ assertion's `service_level` and penalty parameters do not match those included in the _OAR_
 it is up to the `Central Authority` to make those descrepancies known to the user.  If the user agrees to the 
 counter-offer then the _OAG_ may be used to create an _OAA_, at which point the terms outlined in the _OAG_ are
 the official terms of the engagement.  If the _Resource Requestor_ does not agree to the new terms, then the 
-`Central Authority` must start over, issuing a new _OAR_ on the _Resource Requestor_s behalf.
+`Central Authority` must start over, issuing a new _OAR_ on behalf of the _Resource Requestor_.
 
 #### The Header
 
@@ -755,7 +755,7 @@ OATs are just JWTs with one or more OAAs specified in the `assertions` property.
 
 The _OAA_ is sent to the _Resource Provider_ so that it can see the user accepted the _OAG_ and take provisioning
 and configuration actions.  Once this is done the _OAA_ is ready to be tucked into an _OAT_ and used to gain access
-to the resources.  `Central Authority` can have the user's client POST the _OAA_ to the _Resource Provider_s OAG
+to the resources.  `Central Authority` can have the user's client POST the _OAA_ to the _Resource Provider_'s OAG
 acceptance endpoint, or it can POST the signed _OAA_ "irt" (in response to) the _OAG_ using a backchannel process.
 In any case, the _Resource Provider_ needs to see the _OAA_ before the grant expires (specified by the "exp")
 
