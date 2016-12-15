@@ -34,11 +34,14 @@
             "type": ["string", "array"],
             "description": "the service or services this grant is made to (Usually an entity that forms and stores OAAs)"
         },
-        "access": {
-            "type": "array",
+        "granted": {
+            "type": "object",
         },
-        "resources": {
-            "type": "array",
+        "denied": {
+            "type": "object",
+        },
+        "provisioned": {
+            "type": "object",
         },
         "_sk": {
             "type": "array",

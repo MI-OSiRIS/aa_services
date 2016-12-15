@@ -1,9 +1,9 @@
-package OSiRIS::Model::Target::Key;
+package OSiRIS::Model::Entity::Certificate;
 
 use base qw/DBIx::Class/;
 
 __PACKAGE__->load_components(qw/PK::Auto Core/);
-__PACKAGE__->table('osiris_aa_target_key');
+__PACKAGE__->table('osiris_aa_entity_certificate');
 
 __PACKAGE__->add_columns(
     id => {
@@ -11,7 +11,7 @@ __PACKAGE__->add_columns(
         data_type         => 'integer',
         is_numeric        => 1,
     },
-    target => {
+    entity => {
         data_type => 'integer',
         is_numeric => 1,
         is_foreign_key => 1,
@@ -21,23 +21,23 @@ __PACKAGE__->add_columns(
         data_type => 'varchar',
         size => 64,
     },
-    # the jwk thumprint of the current signing public key of this target.
+    # the jwk thumprint of the current signing public key of this entity.
     set_id => {
         data_type => 'varchar',
         size => 64,
     },
-    is_primary => {
-        data_type => 'integer',
-        default_value => 0,
-    },
     pem_string => {
         data_type => 'text',
     },
-    certificate => {
+    secret_key => {
         data_type => 'integer',
         is_numeric => 1,
         is_foreign_key => 1,
         is_nullable => 1,
+    },
+    is_primary => {
+        data_type => 'integer',
+        default_value => 0,
     },
     type => {
         is_enum   => 1,
@@ -57,8 +57,8 @@ __PACKAGE__->add_columns(
 
 __PACKAGE__->set_primary_key('id');
 __PACKAGE__->add_unique_constraint(thumbprint  => ['thumbprint']);
-__PACKAGE__->belongs_to(target => 'OSiRIS::Model::Target');
-__PACKAGE__->might_have(certificate => 'OSiRIS::Model::Target::Certificate');
+__PACKAGE__->belongs_to(entity => 'OSiRIS::Model::Entity');
+__PACKAGE__->might_have(secret_key => 'OSiRIS::Model::Entity::Key');
 
 sub sqlt_deploy_hook {
     my ($self, $sqlt_table) = @_;

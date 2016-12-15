@@ -1,11 +1,11 @@
-package OSiRIS::Model::Target;
+package OSiRIS::Model::Entity;
 
 use OSiRIS::AccessAssertion::RSA::Certificate;
 use OSiRIS::AccessAssertion::RSA::Key;
 use base qw/DBIx::Class/;
 
 __PACKAGE__->load_components(qw/PK::Auto Core/);
-__PACKAGE__->table('osiris_aa_target');
+__PACKAGE__->table('osiris_aa_entity');
 
 __PACKAGE__->add_columns(
     id => {
@@ -25,14 +25,54 @@ __PACKAGE__->add_columns(
         data_type  => 'integer',
         is_numeric => 1,
     },
+    
+    # entities can be agents for other entities
+    agent_for => {
+        data_type => 'integer',
+        is_numeric => 1,
+        is_foreign_key => 1,
+        is_nullable => 1,
+    },
+    
+    # entities can be resource providers, central authorities, end users, or agents but don't have to be.
+    eduperson_principal_name => {
+        data_type => 'varchar',
+        size => 255,
+        is_nullable => 1,
+    },
+    eduperson_targeted_id => {
+        data_type => 'text',
+        is_nullable => 1,
+    },
 );
 
 __PACKAGE__->set_primary_key('id');
 __PACKAGE__->add_unique_constraint(entity_id  => ['entity_id']);
+__PACKAGE__->add_unique_constraint(eduperson_principal_name  => ['eduperson_principal_name']);
 
-__PACKAGE__->has_many(certificates => 'OSiRIS::Model::Target::Certificate', 'target');
-__PACKAGE__->has_many(keys => 'OSiRIS::Model::Target::Key', 'target');
-__PACKAGE__->has_many(aliases => 'OSiRIS::Model::Target::Alias', 'target');
+__PACKAGE__->has_many(certificates => 'OSiRIS::Model::Entity::Certificate', 'entity');
+__PACKAGE__->has_many(keys => 'OSiRIS::Model::Entity::Key', 'entity');
+__PACKAGE__->has_many(aliases => 'OSiRIS::Model::Entity::Alias', 'entity');
+
+#
+# As far as agents go, they're self-referential relationships back to this table.
+#
+__PACKAGE__->belongs_to(
+    handler_entity => 'OSiRIS::Model::Entity',
+    { 'foreign.id ' => 'self.agent_for' }  
+);
+
+__PACKAGE__->has_many(
+    agents => 'OSiRIS::Model::Entity',
+    { 'foreign.agent_for' => 'self.id' }  
+);
+
+sub is_agent {
+    if (shift->get_column('agent_for')) {
+        return 1;
+    }
+    return undef;
+}
 
 sub current_encryption_certificate {
     my ($self) = @_;

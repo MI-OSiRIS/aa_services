@@ -30,11 +30,8 @@
             "type": ["string", "array"],
             "description": "the resource provider or providers (audience) this request is made to"
         },
-        "access": {
-            "type": "array",
-        },
-        "resources": {
-            "type": "array",
+        "requested_access": {
+            "type": "object",
         },
         "_sk": {
             "type": "array",
@@ -45,5 +42,5 @@
             "description": "symmetric session key encrypted base64url encoded block of JSON to be evaluated as if it were interposed literally after the previous entry and before the next entry in the current lexical scope.  The first 24 bytes are the nonce."
         },
     },
-    "required": ["iss", "jti", "iat", "exp", "sub", "aud", "access", "resources"]
+    "required": ["iss", "jti", "iat", "exp", "sub", "aud", "requested_access"]
 }

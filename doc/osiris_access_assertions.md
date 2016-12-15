@@ -90,6 +90,20 @@ attributeType (1.3.5.1.3.1.17128.313.1.7
     MULTI_VALUE
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )
 
+attributeType (1.3.5.1.3.1.17128.313.1.8
+    NAME 'osirisPreviousEncryptionCertificates'
+    DESC 'all historical DER encoded encryption certificates for this entity'
+    EQUALITY caseExactMatch
+    MULTI_VALUE
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )
+
+attributeType (1.3.5.1.3.1.17128.313.1.9
+    NAME 'osirisPreviousSigningCertificates'
+    DESC 'all historical DER encoded signing certificates for this entity'
+    EQUALITY caseExactMatch
+    MULTI_VALUE
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )
+
 objectClass ( 1.3.5.1.3.1.17128.313.1 
     NAME 'osirisEntity' SUP top STRUCTURAL 
     MUST ( osirisEntityUniqueID ) 
@@ -230,7 +244,7 @@ The header should state the type of token this is, using `OAR` for Access Reques
         "/02ZGeOePwriwiO6F3r4eok"
     ],
 
-    // at any level an "_opaque" property may occur.  it is to be base64url
+    // within any object an "_opaque" property may occur.  it is to be base64url
     // decoded, and decrypted with the session key, and its properties are 
     // to be merged into the resulting object structure in the place where
     // it is found.  _opaque properties that are simple strings may be read
@@ -246,147 +260,168 @@ The header should state the type of token this is, using `OAR` for Access Reques
     // 'read', 'write', and 'admin' access to 'science2:/mad/science' 
     // and shell accounts and access to 'science.example.com' and
     // 'shells.archimedes.gr'
-    "access": [
-        // literal strings represent single kinds of access, could also be
-        // written as ["read"],
-        {
-            "type": "cephfs-mount",
-            "kind": "read",
-            
-            // resources can be lists of strings.  these resources already exist and we
-            // do have the requisite affiliations / attributes for the read access requested
-            "resource": ['science1:/some/science', 'sci45:/more/science']
-        },
+    "requested_access": {
+        
+        
+        "access": [
+            // literal strings represent single kinds of access, could also be
+            // written as ["read"],
+            {
+                "type": "cephfs-mount",
+                "kind": "read",
+                
+                // resources can be lists of strings.  these resources already exist and we
+                // do have the requisite affiliations / attributes for the read access requested
+                "resource": ['science1:/some/science', 'sci45:/more/science']
+            },
 
-        // arrays represent multiple types of access
-        {
-            "type": "cephfs-mount",
-            "kind": ["read", "write", "admin"],
-            
-            // resources can be plain strings, this resource already exists but we don't
-            // have the requisite attributes for admin access, just read and write
-            "resource": 'science2:/mad/science'
-        },
+            // arrays represent multiple types of access
+            {
+                "type": "cephfs-mount",
+                "kind": ["read", "write", "admin"],
+                
+                // resources can be plain strings, this resource already exists but we don't
+                // have the requisite attributes for admin access, just read and write
+                "resource": "science2:/mad/science"
+            },
 
-        // but if the 'access' is an object instead of a string or array, 
-        // consider it 'advanced', and include extra information to facilitate
-        // the grant.  here we're requesting to provision service that doesn't
-        // exist yet.  science.example.com does not offer shell accounts but
-        // shells.archimedes.gr does.  we also have the requisite affiliations
-        // and approvals to obtain a shell account on shells.archimedes.gr
-        {
-            // the type is what we call this resource (required)
-            "type": "shell-account",
+            // we are provisioning these resources below but we also want to request access to them
+            {
+                "type": "shell-account",
+                "kind": ["login", "sudo"],                
+                "resource": "ssh://ak1520@shells.archimedes.gr"
+            },
 
-            // kinds of access users can have to this resource
-            "kind": ["login", "sudo"],
+            {
+                "type": "shell-account",
+                "kind": ["login", "sudo"],
+                "resource": "ssh://ak1520@science.example.com"
+            }            
 
-            "resource": [
-                // objects denote more "complex" data
-                {
-                    // common name will be used in the future when people request access to this resource
-                    "common_name": "ssh://ak1520@science.example.com",
-                    
-                    // the rest is configuration for stpd / puppet / whatever scripts provision this
-                    "host": "science.example.com",
-                    "requested_userid": "ak1520",
-                    "ssh_pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB3+iRTnUqdbCgiXY3rbVbVXR1r1RbZE/z3Pfxb6M/qz ak1520@example.edu"
-                },
-                {
-                    "common_name": "ssh://ak1520@shells.archimedes.gr",
-                    
-                    // the rest is configuration data for stpd
-                    "host": "shells.archimedes.gr",
-                    "requested_userid": "ak1520",
-                    "ssh_pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB3+iRTnUqdbCgiXY3rbVbVXR1r1RbZE/z3Pfxb6M/qz ak1520@example.edu"
-                }
-            ],
+        ],
+        
+        provision: [
+            // but if the 'access' is an object instead of a string or array, 
+            // consider it 'advanced', and include extra information to facilitate
+            // the grant.  here we're requesting to provision service that doesn't
+            // exist yet.  science.example.com does not offer shell accounts but
+            // shells.archimedes.gr does.  we also have the requisite affiliations
+            // and approvals to obtain a shell account on shells.archimedes.gr
+            {
+                // the type is what we call this resource (required)
+                "type": "shell-account",
 
-            // requested / required availability for this access
-            "service_level": [
-                {
-                    "src": "141.217.0.0/16",
-                    "dst": "192.168.10.0/24",
-                    
-                    // guarantee 4 9's of uptime between these networks
-                    "uptime": 0.9999,
-                    
-                    // a third party arbitrator can be specified to monitor availability
-                    "arbitrator" {
-                        "src": "141.217.4.64",
-                        "ssh_pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBQ2t/mwgJm3/uLJ9oyjOquxSivIeuOOTlbo/LwXNSA2 mikeyg@keep.local"
+                // kinds of access users can have to this resource
+                "kind": ["login", "sudo"],
+
+                "resource": [
+                    // objects denote more "complex" data
+                    {
+                        // common name will be used in the future when people request access to this resource
+                        "common_name": "ssh://ak1520@science.example.com",
+                        
+                        // the rest is configuration for stpd / puppet / whatever scripts provision this
+                        "host": "science.example.com",
+                        "requested_userid": "ak1520",
+                        "ssh_pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB3+iRTnUqdbCgiXY3rbVbVXR1r1RbZE/z3Pfxb6M/qz ak1520@example.edu"
                     },
-                    
-                    // written in cron time + duration, this is Sundays between midnight and 4AM
-                    // these dont count against availability
-                    "maintenance_schedule": "* * 0 * * 0 +4h"
-                },
-                {
-                    "src": "141.217.0.0/16",
-                    "dst": "0.0.0.0/0",
-                    // expected throughput between these networks in kbps (1Gbps)
-                    "nominal_throughput": 1000000,
-                    // minimum throughput between these networks in kbps (100Mbps)
-                    "minimum_throughput": 100000,
+                    {
+                        "common_name": "ssh://ak1520@shells.archimedes.gr",
+                        
+                        // the rest is configuration data for stpd
+                        "host": "shells.archimedes.gr",
+                        "requested_userid": "ak1520",
+                        "ssh_pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB3+iRTnUqdbCgiXY3rbVbVXR1r1RbZE/z3Pfxb6M/qz ak1520@example.edu"
+                    }
+                ],
 
-                    // a third party arbitrator can be specified to monitor throughput
-                    "arbitrator" {
-                        "src": "141.217.4.64",
-                        "exec": "iperf3 -c 141.217.4.64 -t 2 -p 4567",
-                        "ssh_pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBQ2t/mwgJm3/uLJ9oyjOquxSivIeuOOTlbo/LwXNSA2 mikeyg@keep.local"
+                // requested / required availability for this access
+                "service_level": [
+                    {
+                        "src": "141.217.0.0/16",
+                        "dst": "192.168.10.0/24",
+                        
+                        // guarantee 4 9's of uptime between these networks
+                        "uptime": 0.9999,
+                        
+                        // a third party arbitrator can be specified to monitor availability
+                        "arbitrator" {
+                            "src": "141.217.4.64",
+                            "ssh_pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBQ2t/mwgJm3/uLJ9oyjOquxSivIeuOOTlbo/LwXNSA2 mikeyg@keep.local"
+                        },
+                        
+                        // written in cron time + duration, this is Sundays between midnight and 4AM
+                        // these dont count against availability
+                        "maintenance_schedule": "* * 0 * * 0 +4h"
                     },
+                    {
+                        "src": "141.217.0.0/16",
+                        "dst": "0.0.0.0/0",
+                        // expected throughput between these networks in kbps (1Gbps)
+                        "nominal_throughput": 1000000,
+                        // minimum throughput between these networks in kbps (100Mbps)
+                        "minimum_throughput": 100000,
 
-                    // written in cron time + duration, this is Sundays between midnight and 4AM
-                    // exceptions that occur during this period dont count.
-                    "maintenance_schedule": "* * 0 * * 0 +4h"
-                }   
-            ],
+                        // a third party arbitrator can be specified to monitor throughput
+                        "arbitrator" {
+                            "src": "141.217.4.64",
+                            "exec": "iperf3 -c 141.217.4.64 -t 2 -p 4567",
+                            "ssh_pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBQ2t/mwgJm3/uLJ9oyjOquxSivIeuOOTlbo/LwXNSA2 mikeyg@keep.local"
+                        },
 
-            // can specify penalties that correspond to violations in the service
-            // levels defined above, use 'null' for no enforcement.  these can be plain language,
-            // code, or a number which represents a % of a discount of the monthly fee per violation
-            "penalty": [
-                null,
-                null
-            ],
+                        // written in cron time + duration, this is Sundays between midnight and 4AM
+                        // exceptions that occur during this period dont count.
+                        "maintenance_schedule": "* * 0 * * 0 +4h"
+                    }   
+                ],
 
-            // if present it means only these RPs should consider this but
-            // say we know these resources offer shell accounts
-            // portion of the OAR (optional)
-            "aud": ["urn:oid:1.3.5.1.3.1.17128.313.1.1:hRiHEh-3fCe47Kg0UhMVjx1RRYVsdqDk"],
-            
-            // preflight run to see if resource has been provisioned, if this 
-            // code returns 1, then run "grant", if this code returns 0 then
-            // run "prov", if this code returns -1 then run "dprov" (required)
-            "pchk": ["1+CeZgfwM5DdboGVlrHmK3rashzaLiJf4h7YdlVkdDo6FM0jT4l4K"],
-            
-            // what to run to provision access (optional)
-            // e.g. this code could useradd 
-            "prov": "[zaURai/rvr77Lv31xJXQPR0pNA63JC4am0FS8/gimfv+1LcV"],
-            
-            // what to run to deprovision resource (optional)
-            // e.g. this code could tar up a home dir, userdel -r, and email
-            // the user that they have 30 days to download it
-            "dprov": "[zaURai/rvr77Lv31xJXQPR0pNA63JC4am0FS8/gimfv+1LcV"],
-            
-            // what to run to grant ephemeral access to the resource or to
-            // actually perform the action defined by this label (optional)
-            // e.g. this code could email the user a temp password
-            "grant": ["zaURai/rvr77Lv31xJXQPR0pNA63JC4am0FS8/gimfv+1LcV"],
+                // can specify penalties that correspond to violations in the service
+                // levels defined above, use 'null' for no enforcement.  these can be plain language,
+                // code, or a number which represents a % of a discount of the monthly fee per violation
+                "penalty": [
+                    null,
+                    null
+                ],
 
-            // what to run to revoke ephemeral access to the resource or to
-            // actually undo the action defined by this label (optional)
-            "revoke": ["rvr77Lv31xJXQPR0pNA63JC4am0FS8"],
+                // if present it means only these RPs should consider this but
+                // say we know these resources offer shell accounts
+                // portion of the OAR (optional)
+                "aud": ["urn:oid:1.3.5.1.3.1.17128.313.1.1:hRiHEh-3fCe47Kg0UhMVjx1RRYVsdqDk"],
+                
+                // preflight run to see if resource has been provisioned, if this 
+                // code returns 1, then run "grant", if this code returns 0 then
+                // run "prov", if this code returns -1 then run "dprov" (required)
+                "pchk": ["1+CeZgfwM5DdboGVlrHmK3rashzaLiJf4h7YdlVkdDo6FM0jT4l4K"],
+                
+                // what to run to provision access (optional)
+                // e.g. this code could useradd 
+                "prov": "[zaURai/rvr77Lv31xJXQPR0pNA63JC4am0FS8/gimfv+1LcV"],
+                
+                // what to run to deprovision resource (optional)
+                // e.g. this code could tar up a home dir, userdel -r, and email
+                // the user that they have 30 days to download it
+                "dprov": "[zaURai/rvr77Lv31xJXQPR0pNA63JC4am0FS8/gimfv+1LcV"],
+                
+                // what to run to grant ephemeral access to the resource or to
+                // actually perform the action defined by this label (optional)
+                // e.g. this code could email the user a temp password
+                "grant": ["zaURai/rvr77Lv31xJXQPR0pNA63JC4am0FS8/gimfv+1LcV"],
 
-            // requested provision expiration time (dprov runs after this time,
-            // optional, defaults to the heat death of the universe)
-            "pexp": 1504816977,
+                // what to run to revoke ephemeral access to the resource or to
+                // actually undo the action defined by this label (optional)
+                "revoke": ["rvr77Lv31xJXQPR0pNA63JC4am0FS8"],
 
-            // requested grant expiration time (ephemeral access is removed
-            // after this time, optional, defaults to iat + (86400 * 7))
-            "gexp": 1473885747
-        }
-    ],
+                // requested provision expiration time (dprov runs after this time,
+                // optional, defaults to the heat death of the universe)
+                "pexp": 1504816977,
+
+                // requested grant expiration time (ephemeral access is removed
+                // after this time, optional, defaults to iat + (86400 * 7))
+                "gexp": 1473885747
+            }
+        ],
+    },
+    
 }
 ```
 
@@ -442,6 +477,11 @@ the official terms of the engagement.  If the _Resource Requestor_ does not agre
     "sub": ["ak1520@wayne.edu", "urn:oid:1.3.5.1.3.1.17128.313.1.2:85B68BF3-2343-42FF-A0C4-C10E1C3CA868"],
     "jti": "51679296-37B9-45BE-BE25-A371CF27E5D2",
     "irt": "E821240C-5494-4B40-8387-5DC3A3B37813",
+    
+    // time to accept this issued grant by sending a signed _OAA_ containing the unaltered grant to the
+    // execution/acceptance endpoint.  after `time > (iat + tta)` the grant becomes unexecutable.
+    "tta": 1300,
+
 
     // the grant is for the central authority and for the issuing RP, in a way it's
     // granting an OAG to itself.
@@ -706,7 +746,7 @@ an official agreement.
 }
 ```
 
-It's just a JWT with an OAA in it.
+OATs are just JWTs with one or more OAAs specified in the `assertions` property.
 
 ### Nested like Russian dolls...
 
@@ -714,7 +754,9 @@ It's just a JWT with an OAA in it.
 
 The _OAA_ is sent to the _Resource Provider_ so that it can see the user accepted the _OAG_ and take provisioning
 and configuration actions.  Once this is done the _OAA_ is ready to be tucked into an _OAT_ and used to gain access
-to the resources.
+to the resources.  `Central Authority` can have the user's client POST the _OAA_ to the _Resource Provider_s OAG
+acceptance endpoint, or it can POST the signed _OAA_ "irt" (in response to) the _OAG_ using a backchannel process.
+In any case, the _Resource Provider_ needs to see the _OAA_ before the grant expires (specified by the "exp")
 
 The `Central Authority` unpacks the credentials stored in the grant by obtaining the session key, decrypting it
 with its private key, and then decrypting the credential payload.  It then feeds those credentials over a TLS 
@@ -724,3 +766,9 @@ mount.ceph, mount.nfs, what have you, to configure that access.
 The agent becomes a watchdog, remaining in constant communication with the `Central Authority`.  Watching for 
 revoke actions, keeping sessions alive between laptop closings and openings, intermittent network availability, 
 and providing us with debug output to improve services.
+
+## OSiRIS Access Assertion Management
+
+A web interface will be included as part of `oakd` that allows for
+ * Listing and managing OAAs that belong to you
+ * Lightweight workflow/approval queues for _Resource User_s

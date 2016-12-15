@@ -1,9 +1,9 @@
-package OSiRIS::Model::Target::Alias;
+package OSiRIS::Model::Entity::Alias;
 
 use base qw/DBIx::Class/;
 
 __PACKAGE__->load_components(qw/PK::Auto Core/);
-__PACKAGE__->table('osiris_aa_target_alias');
+__PACKAGE__->table('osiris_aa_entity_alias');
 
 __PACKAGE__->add_columns(
     id => {
@@ -11,7 +11,7 @@ __PACKAGE__->add_columns(
         data_type         => 'integer',
         is_numeric        => 1,
     },
-    target => {
+    entity => {
         data_type => 'integer',
         is_numeric => 1,
         is_foreign_key => 1,
@@ -32,7 +32,7 @@ __PACKAGE__->add_columns(
 
 __PACKAGE__->set_primary_key('id');
 __PACKAGE__->add_unique_constraint(common_name  => ['common_name']);
-__PACKAGE__->belongs_to(target => 'OSiRIS::Model::Target');
+__PACKAGE__->belongs_to(entity => 'OSiRIS::Model::Entity');
 
 sub sqlt_deploy_hook {
     my ($self, $sqlt_table) = @_;

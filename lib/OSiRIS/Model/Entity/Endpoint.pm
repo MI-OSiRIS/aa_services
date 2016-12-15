@@ -1,9 +1,9 @@
-package OSiRIS::Model::Target::Endpoint;
+package OSiRIS::Model::Entity::Endpoint;
 
 use base qw/DBIx::Class/;
 
 __PACKAGE__->load_components(qw/PK::Auto Core/);
-__PACKAGE__->table('osiris_aa_target_endpoint');
+__PACKAGE__->table('osiris_aa_entity_endpoint');
 
 __PACKAGE__->add_columns(
     id => {
@@ -11,7 +11,7 @@ __PACKAGE__->add_columns(
         data_type         => 'integer',
         is_numeric        => 1,
     },
-    target => {
+    entity => {
         data_type => 'integer',
         is_numeric => 1,
         is_foreign_key => 1,
@@ -55,11 +55,11 @@ __PACKAGE__->add_columns(
 
 __PACKAGE__->set_primary_key('id');
 __PACKAGE__->add_unique_constraint(endpoint_url  => ['endpoint_url']);
-__PACKAGE__->belongs_to(target => 'OSiRIS::Model::Target');
-__PACKAGE__->might_have(encryption_key => 'OSiRIS::Model::Target::Key');
-__PACKAGE__->might_have(encryption_certificate => 'OSiRIS::Model::Target::Certificate');
-__PACKAGE__->might_have(signing_key => 'OSiRIS::Model::Target::Key');
-__PACKAGE__->might_have(signing_certificate => 'OSiRIS::Model::Target::Certificate');
+__PACKAGE__->belongs_to(entity => 'OSiRIS::Model::Entity');
+__PACKAGE__->might_have(encryption_key => 'OSiRIS::Model::Entity::Key');
+__PACKAGE__->might_have(encryption_certificate => 'OSiRIS::Model::Entity::Certificate');
+__PACKAGE__->might_have(signing_key => 'OSiRIS::Model::Entity::Key');
+__PACKAGE__->might_have(signing_certificate => 'OSiRIS::Model::Entity::Certificate');
 
 sub sqlt_deploy_hook {
     my ($self, $sqlt_table) = @_;
