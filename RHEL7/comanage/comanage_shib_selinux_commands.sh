@@ -1,5 +1,8 @@
 # selinux ... allow the web server to serve comanage-registry..
 
+# for the future when we're querying CM-managed LDAP
+setsebool httpd_can_connect_ldap 1
+
 # for comanage registry
 semanage fcontext -a -t httpd_sys_content_t "/srv/comanage/.*"
 restorecon -Rv /srv/comanage
