@@ -52,10 +52,10 @@ for access
 
 ## StPd Endpoints
 
-`stpd` is the OAA service that runs on the _Resource Provider_s
+`stpd` is the OAA service that runs on a _Resource Provider_
 
 **/stpd/metadata.json**
 
-### Endpoints that require bearer tokens in the Authorization: header "Bearer <OAT>"
+### Endpoints that require bearer tokens
 
 * **/stpd/token/redeem** - Used to obtain native credentials for a service 
