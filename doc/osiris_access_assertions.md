@@ -17,7 +17,8 @@
  * _OSiRIS Access Request (OAR)_ - Issued by _Central Authority_ `oakd` to one or more _Resource Authorities_ `stpd` to provision services and receive an...
  * _OSiRIS Access Grant (OAG)_ - Issued by _Resource Authorities_ `stpd` to the _Central Authority_ `oakd` to be included in an...
  * _OSiRIS Access Assertion (OAA)_ - To be stored by _Central Authority_ `oakd` and delivered to user agents as part of an..
- * _OSiRIS Access Token (OAT)_ (short lived, hours/days/weeks) and / or an _OSiRIS Refresh Token (ORT)_ (longer-lived, months/years) which are stored on client machines and are used as bearer tokens to gain access to resources
+ * _OSiRIS Access Token (OAT)_ - (short lived, hours/days/weeks) and / or an 
+ * _OSiRIS Refresh Token (ORT)_ - (longer-lived, months/years) which are stored on client machines and are used as bearer tokens to gain access to resources via `stpd`
 
 ## Novel benefits of the OAA approach
 
@@ -40,7 +41,7 @@
 
 ## LDAP Schema (utilize oid urns below)
 
-```
+```ldif
 attributeType ( 1.3.5.1.3.1.17128.313.1.1
     NAME 'osirisKeyThumbprint',
     DESC 'a Base64-URL encoded SHA256 hash of the DER encoded RSA signing public key'
