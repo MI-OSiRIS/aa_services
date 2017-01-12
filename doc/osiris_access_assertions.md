@@ -130,7 +130,7 @@ objectClass ( 1.3.5.1.3.1.17128.313.4
 
 ### Central Authority Metadata (for OAR, OAG, and OAA)
 
-The `Central Authority` will need metadata of its own, note the `urn:oid` format used here is based upon the LDAP schema defined above for the `osirisKeyThumbprint` attribute.  **Please Note** The EntityID/Issuer string format is the `urn:oid:1.3.5.1.3.1.17128.313.1.1:` prefix followed by the [jwk thumbprint](https://tools.ietf.org/html/rfc7638) of the current _signing_ key.  Safeguards are in place, for example calling `osiris_key_thumbprint` on an encryption certificate object will throw a fatal error.  A more durable way to keep track of issuers may be a randomly generated UUID/common name for the `Central Authority` or the `Resource Authority`, which could be represented as `urn:oid:1.3.5.1.3.1.17128.313.1.2:UUID`, or `urn:uuid:UUID` 
+The `Central Authority` will need metadata of its own, note the `urn:oid` format used here is based upon the LDAP schema defined above for the `osirisEntityUniqueID` attribute.  When an entity is identified instead by their `osirisKeyThumbprint` or `urn:oid:1.3.5.1.3.1.17128.313.1.1`, it must be generated with a base64 encoding of the sha256 hash of the DER encoded entity's *public signing key* Note: *not certificate*.  Safeguards are in place, for example calling `osiris_key_thumbprint` on an encryption certificate object will throw a fatal error.  The more durable, and thus canonical way to keep track of issuers may be a randomly generated UUID/common name for the `Central Authority` or the `Resource Authority`, which could be represented as `urn:oid:1.3.5.1.3.1.17128.313.1.2:UUID`, or `urn:uuid:UUID` 
 
 ```
 {
