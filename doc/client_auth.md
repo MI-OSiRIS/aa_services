@@ -7,7 +7,7 @@ The high priority client use case we have in mind is for `mount.osiris`, or, a t
 
 Before diving in to the different user interfaces, I will first outline the aspects of the authentication flow that will be the same between the two approaches.
 
-### Client Watchdog / Facilitator Daemon
+### Client Service Daemon
 
 When the command starts up a daemon spins up and begins listening on a socket.  The watchdog will be aware of the state of the action and communicate back to the GUI or Command Line interfaces via IPC to prompt and obtain user input where appropriate.
 
@@ -98,7 +98,7 @@ This interface will be kicked off with an incantation that looks something like 
 
 `mount -t osiris cephmon1-wsu.osris.org:/projectname /mnt/projectname`
 
-Once launched, the main process would remain interactive with the user, create a `socketpair` for IPC communication between the interactive process and the *Client Service Daemon*, and then fork the *Client Service Daemon* process.  The *Client Service Daemon* process will parse the local cache of `ORT`s and perform the *Preauth Request* in the background, including the `ORT`(s) that match(es) the resource the user is trying to mount.  If the *Central Authority* agrees that the `ORT` is <sup>1.</sup> still valid, and <sup>2.</sup> that it matches the client identified by the *Client Identifier*, it will return an `OAT` which can then be sent over the *Resource Authoirity* to retrieve native credentials, at which point, the user interface completes the **Native Auth** step and exits, leaving the *Client Service Daemon* to watch for revocations, disconnections, and system changes that would require it to reconnect.
+Once launched, the main process would remain interactive with the user, fork the *Client Service Daemon* process, and connect to it via its UNIX socket.  The *Client Service Daemon* process will parse the local cache of `ORT`s and perform the *Preauth Request* in the background, including the `ORT`(s) that match(es) the resource the user is trying to mount.  If the *Central Authority* agrees that the `ORT` is <sup>1.</sup> still valid, and <sup>2.</sup> that it matches the client identified by the *Client Identifier*, it will return an `OAT` which can then be sent over the *Resource Authoirity* to retrieve native credentials, at which point, the user interface completes the **Native Auth** step and exits, leaving the *Client Service Daemon* to watch for revocations, disconnections, and system changes that would require it to reconnect.
 
 However, if none of the `ORT`s were valid, there was a *Client Identifier* mismatch, or this client hasn't been used to access these resources yet (had no matching `ORT`s), then the interactive process will display a message to the user along the lines of:
 
