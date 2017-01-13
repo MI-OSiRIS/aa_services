@@ -49,7 +49,7 @@ Or, using [JSON-RPC](http://www.jsonrpc.org/specification), we could send this t
     "method": "client_register",
     "params": {
         "cid": "ae004f693de56bc80b44230fdce44e6cc680a5790bbd0be6566e42bef8f91c84",
-        "ort": ["<ORT1>", "<ORT2>"], // optional
+        "ort": ["<ORT1>", "<ORT2>"],
     }
 }
 ```
