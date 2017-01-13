@@ -1,7 +1,36 @@
 Client Auth
 ===========
 
-The high priority client use case we have in mind is for `mount.osiris`, or, a tool that mounts an OSiRIS file resource that the user has access to.  Two approaches immediately come to mind for getting OATs to the clients that wish to access OSiRIS resources.
+The high priority client use case we have in mind is for `mount.osiris`, or, a tool that mounts an OSiRIS file resource that the user has access to.  The approach below is modeled after the [OAuth for Native Apps IETF draft](https://tools.ietf.org/html/draft-ietf-oauth-native-apps-06).  The authentication scheme described here differs slightly from the flow described in [Figure 4.1](https://tools.ietf.org/html/draft-ietf-oauth-native-apps-06#section-4.1) of the OAuth Client Auth draft, but is similar enough.  The differences mostly stem from the fact that user participation may be required to nudge along the process.
+
+### 4.1.  Authorization Flow for Native Apps Using the Browser
+
+```
+  +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
+  |          User Device           |
+  |                                |
+  | +---------------------------+  |                     +-----------+
+  | |                           |  | (5) Authz Code      |           |
+  | |        Client App         |----------------------->|  Token    |
+  | |                           |<-----------------------|  Endpoint |
+  | +---------------------------+  | (6) Access Token,   |           |
+  |    |              ^            |     Refresh Token   +-----------+
+  |    |              |            |
+  |    |              |            |
+  |    | (1)          | (4)        |
+  |    | Authz        | Authz      |
+  |    | Request      | Code       |
+  |    |              |            |
+  |    |              |            |
+  |    v              |            |
+  | +---------------------------+  |                   +---------------+
+  | |                           |  | (2) Authz Request |               |
+  | |          Browser          |--------------------->| Authorization |
+  | |                           |<---------------------| Endpoint      |
+  | +---------------------------+  | (3) Authz Code    |               |
+  |                                |                   +---------------+
+  +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
+```
 
 ## Common Flow
 
@@ -90,7 +119,7 @@ A simple [Electron](http://electron.atom.io/)-based application (think Slack cli
 
 While technically the [Electron](http://electron.atom.io/) platform is just a re-skinning of Google's open source [Chromium](https://www.chromium.org/) browser project, consideration should be given to our policy of _not accepting user credentials into OSiRIS-branded software_.  This policy not only makes the OSiRIS project more secure, but it promotes sound security practices for end users.
 
-With that in mind the GUI interface would likely behave identically to the command line interface.  The key differences being an improved GUI resource selection interface and a similar interface outlining the currently mounted OSiRIS resources with statistics, and dismount options for each.
+With that in mind the GUI interface would likely behave identically to the command line interface.  The key differences being the ability to create a link that automatically opens the browser window with the *Preauth Token* passed in, an improved GUI resource selection interface, a preferences panel, and a status screen summarizing the currently mounted OSiRIS resources with statistics, and dismount options for each.
 
 ## Command Line Only
 
