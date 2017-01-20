@@ -159,6 +159,42 @@ Since this preauth WebSocket will be opened with the short-lived *Preauth Token*
 
 When the *Client Service Daemon* gets this message it should hang up its preauth WebSocket connection and establish a new one using the the new `OAT` inside the `Authorization` header of its next request.  The *Client Service Daemon* should somewhat aggressively try and keep this session open to the *Central Authority* for the lifetime of the `OAT` to watch for revocation events, potential service migration notices, and other important realtime communications from the OSiRIS mothership.
 
+### Client Resource Request Aggregation
+
+The *Central Authority* will keep track of all initiated requests according to the *Client Identifier* using a data structure that looks similar to this:
+
+```json
+{
+    "70b1160ba504bfcf1a7e4868ccf07070824435137d038995aeb8668572890ef7": [
+        "MfrvvgrbF7kvzfHhgqC3DOM_l2YNA2lj": {
+            "expire_time": 1484949846,
+            "resource": {
+                "type": "cephfs-mount",
+                "location": "sci45:/more/science"
+            }
+        },
+        "jsNI-1B3zKQ-TEfJlygdbQ3Jt87krEnx": {
+            "expire_time": 1484949923,
+            "resource": {
+                "type": "cephfs-mount",
+                "location": "phy02mon.example.edu:/incredible_explosion"
+            },
+        }
+    ]
+}
+```
+
+The *Preauth Token* is derived from the first five alphanumeric characters of a WebSocket session ID.  In the above example, `MfrvvgrbF7kvzfHhgqC3DOM_l2YNA2lj` would be the WebSocket session ID, and so the *Preauth Token* would be `MFRVV`.  The second ID's *Preauth Token* would be 'JSNI1', and so on.  Since there will be one OSiRIS AA *Client Service Daemon* per user, and the deterministic *Client Identifier* includes the UNIX `userid`, these sessions should all be channeled over that WebSocket connection.
+
+Thus, if any *Preauth Token* issued to that *Client Identifier* is used as part of a `https://cm.osris.org/activate` initiated auth flow, the user will receive a confirmation page including details for all of these resource requests, and if confirmed by the user, OATs will be issued and sent along to the *Client Service Daemon* for each request, all at once.
+
+### TL;DR
+
+ * Authenticated `eduPersonPrincipalName` **+** 
+ * **Preauth Token** + Matching **Client Identifier** **+** 
+ * Review and Final Consent By Authenticated `eppn`) **=** 
+ * All `OAT`s (and `OAR`s) matching that **Client Identifier** are issued
+
 ### Native Auth
 
 The **Native Auth** step involves taking the credentials returned by the *Resource Authority* and using the native interface(s) e.g. `mount.ceph` to actually mount the file resource.  The `OAT` and native credentials are kept in memory inside the *Client Service Daemon* for the life of the process so that the *Client Service Daemon* can remount resources after connectivity problems, or retrieve new ephemeral credentials if the original credentials expired before the validity term of the `OAT` has elapsed.
