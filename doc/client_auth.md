@@ -148,14 +148,14 @@ In the mean time the *Client Service Daemon* process opens a WebSocket connectio
 
 If IdP authentication completes before the validity of the *Preauth Token* expires, then the *Central Authority* will send a WebSocket message to the *Client Service Daemon* that looks something like:
 
-Since this preauth WebSocket will be opened with the short-lived *Preauth Token*, the connection will only remain open until that token expires.  If the connection dies in the preauth stage, the *Client Service Daemon* will send a message to the interactive UI program instructing it to print a timeout error and exit.
-
 ```json
 {
     "event_type": "authn_successful",
     "payload": { "oat": "<OAT>" }
 }
 ```
+
+Since this preauth WebSocket will be opened with the short-lived *Preauth Token*, the connection will only remain open until that token expires.  If the connection dies in the preauth stage, the *Client Service Daemon* will send a message to the interactive UI program instructing it to print a timeout error and exit.
 
 When the *Client Service Daemon* gets this message it should hang up its preauth WebSocket connection and establish a new one using the the new `OAT` inside the `Authorization` header of its next request.  The *Client Service Daemon* should somewhat aggressively try and keep this session open to the *Central Authority* for the lifetime of the `OAT` to watch for revocation events, potential service migration notices, and other important realtime communications from the OSiRIS mothership.
 
