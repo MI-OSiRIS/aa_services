@@ -165,7 +165,7 @@ The *Central Authority* will keep track of all initiated requests according to t
 
 ```json
 {
-    "70b1160ba504bfcf1a7e4868ccf07070824435137d038995aeb8668572890ef7": [
+    "70b1160ba504bfcf1a7e4868ccf07070824435137d038995aeb8668572890ef7": {
         "MfrvvgrbF7kvzfHhgqC3DOM_l2YNA2lj": {
             "expire_time": 1484949846,
             "resource": {
@@ -180,7 +180,7 @@ The *Central Authority* will keep track of all initiated requests according to t
                 "location": "phy02mon.example.edu:/incredible_explosion"
             },
         }
-    ]
+    }
 }
 ```
 
