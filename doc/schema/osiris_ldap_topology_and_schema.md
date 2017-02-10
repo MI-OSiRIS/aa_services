@@ -11,6 +11,7 @@ I propose that:
  * We put people in `ou=People, dc=osris, dc=org` and link them to their `eduOrg` as defined by the `eduOrg` objectClass before.
  * We put *organizations* in `ou=Organizations, dc=osris, dc=org`, and make sure they confirm to `eduOrg`.  OSiRIS itself should be sucn an `eduOrg`, as some *automata* and *people* will only have affiliation to the OSiRIS organization.
  * We should put system daemon accounts, and accounts we use for scripting into `ou=Automata, dc=osris, dc=org`, these too can have an affiliation, but many will only be affiliated with the OSiRIS Organization.
+ * *Resource* and *Central Authorities* should go into `ou=Authorities, dc=osris, dc=org`
 
 We collapse all attributes required for `Organizations`, `People`, and `Automata` into one objectClass for each entry type.  These object classes will apply to *all* entries of this type.  So objectClasses such as `posixUser` and `posixGroup` should remain independently assigned, all **People** may not be `posixUser`s, after all.  But we shouldn't have to add the entire `inetOrgPerson` objectClass to only assign the `mail` attribute to the entry, instead we'll allow `osirisPerson` entries to have the `mail` attribute.
 
@@ -25,9 +26,7 @@ This approach serves 2 purposes.
 ### Organization
 ```ldif
     dn: cn=Wayne State University, ou=Organizations, dc=osris, dc=org
-    objectClass: top
     objectClass: osirisOrganization
-    objectClass: osirisEntity
     cn: Wayne State University
     description: A premier research university serving a diverse body of motivated students in vibrant Midtown, the cultural center of Detroit.
     eduOrgHomePageURI: https://wayne.edu
@@ -45,9 +44,8 @@ This approach serves 2 purposes.
 ### Person
 ```ldif
     dn: eppn=ak1520@wayne.edu, ou=People, dc=osris, dc=org
-    objectClass: top
-    objectClass: osirisEntity
     objectClass: osirisPerson
+    objectClass: eduPerson
     objectClass: posixUser
     cn: Michael Gregorowicz
     eduPersonOrgDN: cn=Wayne State University, ou=Organizations, dc=osris, dc=org
@@ -59,11 +57,13 @@ This approach serves 2 purposes.
     mail: michael.gregorowicz@wayne.edu
     sn: Gregorowicz
     uid: ak1520@wayne.edu
+    userPassword: TjnYbTGeh_d0tmFhq4fouJzVnodQ_1hUIHFbNulXmTQuUfn0kYUt8KfM
+    
 ```
 
 ## Object Classes We Should Make Use Of
 
-I'll spare us several of the core objectClasses, we'll be using `top`, `person`, `organizationalPerson`, `organizationalUnit`, `groupOfNames`, `groupOfUniqueNames`, `posixAccount`, `posixGroup`, and `inetOrgPerson`.  We'll use our own objectClasses including but not limited to `osirisPerson`, `osirisEntity`, `osirisAutomaton`, `osirisOrganization`, `osirisResourceProvider`, `osirisCentralAuthority`, and `osirisGroup`.  Additionally, we'll use any and all attributes required for the proper functioning of COmanage, but the goal will be to get *it* to conform to *us* and not the other way around.
+I'll spare us several of the core objectClasses, we'll be using (or be using the attributes of) `top`, `person`, `organizationalPerson`, `organizationalUnit`, `groupOfNames`, `groupOfUniqueNames`, `posixAccount`, `posixGroup`, and `inetOrgPerson`.  We'll use our own objectClasses including but not limited to `osirisPerson`, `osirisEntity`, `osirisAutomaton`, `osirisOrganization`, `osirisResourceProvider`, `osirisCentralAuthority`, and `osirisGroup`.  Additionally, we'll use any and all attributes required for the proper functioning of COmanage, but the goal will be to get *it* to conform to *us* and not the other way around.
 
 *Note:* All attributes are denoted in the subjectively easier-to-read OpenLDAP schema format.  They will all be converted to ns-slapd compatible schemas by a script I wrote (and will hopefully find soon), or will rewrite again.  Years ago I had written a set of scripts that converted the schema to / from these formats but cannot find it now.  That said, I do remember them being very easy scripts to write.
 
