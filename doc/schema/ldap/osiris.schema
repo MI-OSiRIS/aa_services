@@ -22,14 +22,14 @@ attributeType (1.3.5.1.3.1.17128.313.1.3
     DESC 'full URL of the OAK (OAA keyring service) endpoint'
     EQUALITY caseIgnoreMatch
     SINGLE_VALUE
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
 
 attributeType (1.3.5.1.3.1.17128.313.1.4
     NAME 'osirisStpEndpoint'
     DESC 'full URL of the STP (OAA to native gateway service) endpoint'
     EQUALITY caseIgnoreMatch
     SINGLE_VALUE
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
 
 attributeType (1.3.5.1.3.1.17128.313.1.5
     NAME 'osirisEncryptionCertificate'
@@ -66,6 +66,19 @@ attributeType (1.3.5.1.3.1.17128.313.1.9
     MULTI_VALUE
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )
 
+attributeType (1.3.5.1.3.1.17128.313.1.10
+    NAME 'osirisCILogonMapString',
+    DESC 'map string used for CILogon integration with Globus',
+    EQUALITY caseExactMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+)
+
+attributeType(1.3.5.1.3.1.17128.313.1.11
+    NAME 'osirisAffiliatedOrganization',
+    DESC ''
+
+)
+
 # Object Classes
 objectClass ( 1.3.5.1.3.1.17128.313.1 
     NAME 'osirisEntity' SUP top STRUCTURAL 
@@ -88,7 +101,7 @@ objectClass ( 1.3.5.1.3.1.17128.313.3
     NAME 'osirisCentralAuthority' SUP osirisEntity STRUCTURAL 
     MUST ( osirisKeyThumbprint $ osirisOakEndpoint $ osirisSigningCertificate $ osirisEncryptionCertificate ) 
 )
-    
+
 objectClass ( 1.3.5.1.3.1.17128.313.4 
     NAME 'osirisGroup' SUP groupOfNames STRUCTURAL 
     DESC 'groups of osirisEntity objects'
@@ -102,3 +115,8 @@ objectClass ( 1.3.5.1.3.1.17128.313.5
     MUST ( cn $ sn $ givenName $ eduPersonPrincipalName $ eduPersonOrgDN $ uid $ userPassword $ mail )
 )
 
+objectClass ( 1.3.5.1.3.1.17128.313.6 
+    NAME 'osirisProject' SUP osirisEntity STRUCTURAL
+    DESC 'a project or science domain within the OSiRIS system'
+    MUST ( osirisProjectGroup $ cn )
+)
