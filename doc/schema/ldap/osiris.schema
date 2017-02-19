@@ -47,7 +47,7 @@ attributeType (1.3.5.1.3.1.17128.313.1.6
 
 attributeType (1.3.5.1.3.1.17128.313.1.7
     NAME 'osirisAccessTokens'
-    DESC 'an entitys current set of issued osirisAccessTokens'
+    DESC 'an entitys current set of issued b64u encoded OATs'
     EQUALITY caseExactMatch
     MULTI_VALUE
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )
@@ -74,49 +74,142 @@ attributeType (1.3.5.1.3.1.17128.313.1.10
 )
 
 attributeType(1.3.5.1.3.1.17128.313.1.11
-    NAME 'osirisAffiliatedOrganization',
-    DESC ''
-
+    NAME 'osirisAssociatedCOs',
+    DESC 'place to store the unique ids of the COs this entity is associated with',
+    EQUALITY caseExactMatch
+    MULTI_VALUE
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
 )
+
+attributeType(1.3.5.1.3.1.17128.313.1.12
+    NAME 'osirisAssociatedCOGroups',
+    DESC 'place to store the unique of the CO-Groups this entity is associated with',
+    EQUALITY caseExactMatch
+    MULTI_VALUE
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+)
+
+attributeType(1.3.5.1.3.1.17128.313.1.13
+    NAME 'osirisProjectAffiliations',
+    DESC 'the DNs of the osirisProjects this entity is affiliated with'
+    EQUALITY caseIgnoreMatch
+    MULTI_VALUE
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+)
+
+attributeType (1.3.5.1.3.1.17128.313.1.14
+    NAME 'osirisRefreshTokens'
+    DESC 'an entitys current set of issued and valid b64u encoded ORTs'
+    EQUALITY caseExactMatch
+    MULTI_VALUE
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )
+
+attributeType (1.3.5.1.3.1.17128.313.1.15
+    NAME 'osirisAccessRequests'
+    DESC 'an entitys current set of issued and valid b64u encoded OARs'
+    EQUALITY caseExactMatch
+    MULTI_VALUE
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )
+    
+attributeType (1.3.5.1.3.1.17128.313.1.16
+    NAME 'osirisAccessGrants'
+    DESC 'an entitys current set of issued and valid b64u encoded OAGs'
+    EQUALITY caseExactMatch
+    MULTI_VALUE
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )
+
+attributeType (1.3.5.1.3.1.17128.313.1.17
+    NAME 'osirisAccessAssertions'
+    DESC 'an entitys current set of issued and valid b64u encoded OAAs'
+    EQUALITY caseExactMatch
+    MULTI_VALUE
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )
+
+attributeType (1.3.5.1.3.1.17128.313.1.18
+    NAME 'osirisInvalidAccessAssertions'
+    DESC 'an entitys set of invalid, expired, or revoked b64u encoded OAAs'
+    EQUALITY caseExactMatch
+    MULTI_VALUE
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )
+
+attributeType (1.3.5.1.3.1.17128.313.1.19
+    NAME 'osirisPendingAccessRequests'
+    DESC 'a set of pending b64u encoded OARs'
+    EQUALITY caseExactMatch
+    MULTI_VALUE
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )
+
+attributeType (1.3.5.1.3.1.17128.313.1.20
+    NAME 'osirisPendingAccessGrants'
+    DESC 'a set of pending b64u encoded OAGs'
+    EQUALITY caseExactMatch
+    MULTI_VALUE
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )
+
+attributeType (1.3.5.1.3.1.17128.313.1.21
+    NAME 'osirisPendingAccessAssertions'
+    DESC 'a set of pending b64u encoded OAAs'
+    EQUALITY caseExactMatch
+    MULTI_VALUE
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )
 
 # Object Classes
 objectClass ( 1.3.5.1.3.1.17128.313.1 
     NAME 'osirisEntity' SUP top STRUCTURAL 
-    MUST ( osirisEntityUniqueID ) 
+    MUST ( osirisEntityUniqueID $ cn ) 
     MAY ( 
-        osirisKeyThumbprint $ cn $ osirisEncryptionCertificate $ osirisSigningCertificate $ description $
-        uid $ ou $ osirisPreviousSigningCertificates $ osirisPreviousEncryptionCertificates $ 
-        eduPersonAffiliation $ eduPersonNickName $ eduPersonOrgDN $ eduPersonOrgUnitDN $ 
-        eduPersonPrimaryAffiliation $ eduPersonPrincipalName $ eduPersonEntitlement $
-        eduPersonPrimaryOrgUnitDN $ eduPersonScopedAffiliation    
+        description $ uid $ mail $ ou $ telephoneNumber $ 
+        osirisPreviousSigningCertificates $ osirisPreviousEncryptionCertificates $ 
+        osirisAssociatedCOs $ osirisAssociatedCOGroups $ osirisCILogonMapString $
+        osirisKeyThumbprint $ osirisEncryptionCertificate $ osirisSigningCertificate $
+        osirisAccessTokens $ osirisRefreshTokens $ osirisAccessRequests $ osirisAccessGrants $
+        osirisAccessAssertions
     ) 
 )
 
 objectClass ( 1.3.5.1.3.1.17128.313.2 
     NAME 'osirisResourceAuthority' SUP osirisEntity STRUCTURAL 
-    MUST ( osirisKeyThumbprint $ osirisSigningCertificate $ osirisEncryptionCertificate $ osirisStpEndpoint ) 
+    MUST ( osirisKeyThumbprint $ osirisSigningCertificate $ osirisEncryptionCertificate $ osirisStpEndpoint )
+    MAY ( osirisPendingAccessRequests $ osirisPendingAccessGrants $ osirisPendingAccessAssertions )
 )
 
 objectClass ( 1.3.5.1.3.1.17128.313.3 
     NAME 'osirisCentralAuthority' SUP osirisEntity STRUCTURAL 
-    MUST ( osirisKeyThumbprint $ osirisOakEndpoint $ osirisSigningCertificate $ osirisEncryptionCertificate ) 
+    MUST ( osirisKeyThumbprint $ osirisOakEndpoint $ osirisSigningCertificate $ osirisEncryptionCertificate )
+    MAY ( osirisPendingAccessRequests $ osirisPendingAccessGrants $ osirisPendingAccessAssertions )
 )
 
 objectClass ( 1.3.5.1.3.1.17128.313.4 
     NAME 'osirisGroup' SUP groupOfNames STRUCTURAL 
     DESC 'groups of osirisEntity objects'
     MUST ( cn $ osirisEntityUniqueID ) 
-    MAY ( description $ member ) 
+    MAY ( description $ member $ osirisAssociatedCOs $ osirisAssociatedCOGroups ) 
 )
 
 objectClass ( 1.3.5.1.3.1.17128.313.5
     NAME 'osirisPerson' SUP osirisEntity STRUCTURAL
     DESC 'a person who is a user of OSiRIS systems'
-    MUST ( cn $ sn $ givenName $ eduPersonPrincipalName $ eduPersonOrgDN $ uid $ userPassword $ mail )
+    MUST ( sn $ givenName $ eduPersonPrincipalName $ eduPersonOrgDN $ uid $ userPassword $ mail )
+    MAY ( osirisProjectAffiliations )
 )
 
 objectClass ( 1.3.5.1.3.1.17128.313.6 
     NAME 'osirisProject' SUP osirisEntity STRUCTURAL
     DESC 'a project or science domain within the OSiRIS system'
-    MUST ( osirisProjectGroup $ cn )
+    MUST ( osirisGroup $ cn )
+    MAY ( eduPersonOrgDN )
+)
+
+objectClass (1.3.5.1.3.1.17128.313.7 
+    NAME 'osirisOrganization' SUP osirisEntity STRUCTURAL
+    DESC 'an organization affiliated with OSiRIS'
+    MUST ( mailAccessDomain )
+    MAY ( osirisProjectAffiliations )
+)
+
+objectClass (1.3.5.1.3.1.17128.313.8
+    NAME 'osirisAutomaton' SUP osirisEntity STRUCTURAL
+    DESC 'a robot who is a user of OSiRIS systems'
+    MUST ( cn $ uid $ userPassword )
+    MAY ( osirisProjectAffiliations $ osirisOrganizationalAffiliations )
 )
