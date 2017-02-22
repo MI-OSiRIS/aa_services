@@ -26,6 +26,8 @@ GetOptions(
     'q|quiet' => \$ENV{OS2NS_QUIET},
     'h|help' => \my $help,
     'n|no-emoji' => \my $no_emoji,
+    'ns-slapd' => \my $ns_slapd,
+    'openldap-ldif' => \my $openldap_ldif,
 );
 
 our $VERSION = "0.01";
