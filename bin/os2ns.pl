@@ -37,6 +37,16 @@ if (!$ARGV[1] || $help) {
     exit;
 }
 
+my $slaptest;
+if ($openldap_ldif) {
+    if ($slaptest = `which slaptest`) {
+        chomp $slaptest;
+    } else {
+        die "[fatal] OpenLDAP must be installed in order to convert to OpenLDAP LDIF schema\n" .
+            "        please check that it's installed and that 'slaptest' is in the \$PATH\n";
+    }
+}
+
 # question, positive, negative chatacters.
 my ($q_char, $p_char, $n_char, $ok_char) = ('?', '+', '-', 'OK');
 if ($ENV{LANG} =~ /UTF\-8/i && !$no_emoji) {
@@ -138,71 +148,82 @@ print $ofh "cn: schema\n";
 
 my $ifh, $pdepth;
 foreach my $file (@files) {
-    open $ifh, '<', $file or die "Can't read from $file - $!\n";
-    while (my $line = <$ifh>) {
-        # any whitespace at the end of any line was just a newline.  plain and simple.
-        $line =~ s/[\s\r\n]+$/\n/;
-        
-        if ($line =~ /^#/) {
-            print $ofh $line;
-        } elsif ($line =~ /^(attributeType)[\s\(\n]+/i) {
-            $line =~ s/$1/attributeTypes:/;
+    if ($openldap_ldif) {
+        my $time = time;
+        my $conv_conf = "/tmp/schema_conv.$time.conf";
+        my $conv_dir = "/tmp/ldif_conv_$time";
+        open my $fh, '>', $conv_conf;
+        print $fh "include $file\n";
+        close $fh;
+        mkdir $conv_dir;
+        system($slaptest, '-f', $conv_conf, '-F', $conv_dir);        
+    } else {
+        open $ifh, '<', $file or die "Can't read from $file - $!\n";
+        while (my $line = <$ifh>) {
+            # any whitespace at the end of any line was just a newline.  plain and simple.
+            $line =~ s/[\s\r\n]+$/\n/;
             
-            # make sure we have a space between the colon and the open paren
-            if ($line =~ /attributeTypes:[\(\w]+/) {
-                $line =~ s/attributeTypes:/attributeTypes: /;
-            }
-            
-            print $ofh $line;
-        } elsif ($line =~ /(objectClass)[\s\(\n]+/i) {
-            $line =~ s/$1/objectClasses:/;
-
-            # make sure we have a space between the colon and the open paren
-            if ($line =~ /objectClasses:[\(\w]+/) {
-                $line =~ s/objectClasses:/objectClasses: /;
-            }
-
-            print $ofh $line;
-        } elsif ($line =~ /^\s*$/) {
-            # no empty lines in LDIF, replace with comment lines.
-            unless ($ditch_blank_lines) {
-                print $ofh "#\n";    
-            }
-        } elsif ($line =~ /^[\w\(\)\']+/) {
-            # continuations need whitespace at the beginning
-            print $ofh " " . $line;
-        } else {
-            # let's peek ahead to see if there's a lonesome paren on the next line..
-            my $pos = tell($ifh);
-            my $next_line = <$ifh>;
-            if ($next_line =~ /^\s*(\(|\))[\r\n\s]*$/) {
-                # looks like it, we'll bring it up to this line and skip it.
-                my $paren = $1;
-                
-                $line =~ s/\n$//;
-                $line = "$line $paren";
-                
-                # check one more ...
-                $pos = tell($ifh);
-                $next_line = <$ifh>;
-                if ($next_line =~ /^\s*(\(|\))[\r\n\s]*$/) {
-                    # wow, we're closing TWO parens, thats the most we can do in schema config,
-                    # so this will be as deep as we go.  thank goodness i didn't have to write
-                    # a proper parser.
-                    $line = "$line $1";
-                } else {
-                    # paren only went one deep, so seek back and let the next $line go through
-                    # the works.
-                    seek($ifh, $pos, 0);
-                }
-    
-                print $ofh "$line\n";
-            } else {
-                # seek back to where we were, the next line wasn't a lonesome paren.
-                seek($ifh, $pos, 0);
-                
-                # so just print it, there's nothing wrong with it!  hurrah!
+            if ($line =~ /^#/) {
                 print $ofh $line;
+            } elsif ($line =~ /^(attributeType)[\s\(\n]+/i) {
+                $line =~ s/$1/attributeTypes:/;
+                
+                # make sure we have a space between the colon and the open paren
+                if ($line =~ /attributeTypes:[\(\w]+/) {
+                    $line =~ s/attributeTypes:/attributeTypes: /;
+                }
+                
+                print $ofh $line;
+            } elsif ($line =~ /(objectClass)[\s\(\n]+/i) {
+                $line =~ s/$1/objectClasses:/;
+
+                # make sure we have a space between the colon and the open paren
+                if ($line =~ /objectClasses:[\(\w]+/) {
+                    $line =~ s/objectClasses:/objectClasses: /;
+                }
+
+                print $ofh $line;
+            } elsif ($line =~ /^\s*$/) {
+                # no empty lines in LDIF, replace with comment lines.
+                unless ($ditch_blank_lines) {
+                    print $ofh "#\n";    
+                }
+            } elsif ($line =~ /^[\w\(\)\']+/) {
+                # continuations need whitespace at the beginning
+                print $ofh " " . $line;
+            } else {
+                # let's peek ahead to see if there's a lonesome paren on the next line..
+                my $pos = tell($ifh);
+                my $next_line = <$ifh>;
+                if ($next_line =~ /^\s*(\(|\))[\r\n\s]*$/) {
+                    # looks like it, we'll bring it up to this line and skip it.
+                    my $paren = $1;
+                    
+                    $line =~ s/\n$//;
+                    $line = "$line $paren";
+                    
+                    # check one more ...
+                    $pos = tell($ifh);
+                    $next_line = <$ifh>;
+                    if ($next_line =~ /^\s*(\(|\))[\r\n\s]*$/) {
+                        # wow, we're closing TWO parens, thats the most we can do in schema config,
+                        # so this will be as deep as we go.  thank goodness i didn't have to write
+                        # a proper parser.
+                        $line = "$line $1";
+                    } else {
+                        # paren only went one deep, so seek back and let the next $line go through
+                        # the works.
+                        seek($ifh, $pos, 0);
+                    }
+        
+                    print $ofh "$line\n";
+                } else {
+                    # seek back to where we were, the next line wasn't a lonesome paren.
+                    seek($ifh, $pos, 0);
+                    
+                    # so just print it, there's nothing wrong with it!  hurrah!
+                    print $ofh $line;
+                }
             }
         }
     }
@@ -223,6 +244,9 @@ These options are available for 'os2ns.pl':
     -d, --ditch-blank-lines Don't preserve blank lines in OpenLDAP config with comment
                             lines.   Actual comment lines from OpenLDAP are preserved.
     -n, --no-emoji          Don't use emojis in the output, that's dumb.
+        --ns-slapd          Convert to ns-slapd LDIF schema [default]
+        --openldap-ldif     Convert to openldap-ldif schema (requires OpenLDAP be 
+                            installed on this host)
     
 EOF
 }
