@@ -62,7 +62,7 @@
 #
 #            Attributes may not be in OID order
 #
-#               NEXT AVAILABLE OID #: 1.27
+#               NEXT AVAILABLE OID #: 1.36
 #
 # ###### PLEASE UPDATE IF YOU ADD OR REMOVE AN ATTRIBUTE ######
 
@@ -356,7 +356,7 @@ attributeType (1.3.5.1.3.1.17128.313.1.25
 #
 #         ObjectClasses may not be in OID Order
 #
-#              NEXT AVAILABLE OID #: 10
+#              NEXT AVAILABLE OID #: 11
 #
 # ###### PLEASE UPDATE IF YOU ADD OR REMOVE AN OBJECTCLASS ######
 
