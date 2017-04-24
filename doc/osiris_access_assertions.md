@@ -3,22 +3,22 @@
 ## Glossary
 
 * **Central Authority** - A Service that:
- * Maintains a database of registered _Resource Providers_
- * Interfaces with identity providers to authenticate _Resource Users_
- * Facilitates matchmaking / pairing up of _Resource Users_ with _Resource Providers_
- * Allows the formation of roles and groups for convenience 
- * Facilitates the safe keeping of Access Assertions (OAAs) long term
+  1. Maintains a database of registered _Resource Providers_
+  2. Interfaces with identity providers to authenticate _Resource Users_
+  3. Facilitates matchmaking / pairing up of _Resource Users_ with _Resource Providers_
+  4. Allows the formation of roles and groups for convenience 
+  5. Facilitates the safe keeping of Access Assertions (OAAs) long term
 * **Resource Requestor** - An individual or group of individuals wanting to have resources provisioned that do not already exist
 * **Resource User** - An individual or group of individuals that wants to have or currently has access to a resource provided by a _Resource Provider_
 * **Resource Provider** - A system capable of providing certain types of services to _Resource Requestors_ and _Resource Users_. 
 * **Resource Owner** - An individual or group of individuals who requested resources be provisioned, and subsequently had that request granted
 
 * OSiRIS Token Types
- * _OSiRIS Access Request (OAR)_ - Issued by _Central Authority_ `oakd` to one or more _Resource Authorities_ `stpd` to provision services and receive an...
- * _OSiRIS Access Grant (OAG)_ - Issued by _Resource Authorities_ `stpd` to the _Central Authority_ `oakd` to be included in an...
- * _OSiRIS Access Assertion (OAA)_ - To be stored by _Central Authority_ `oakd` and delivered to user agents as part of an..
- * _OSiRIS Access Token (OAT)_ - (short lived, hours/days/weeks) and / or an 
- * _OSiRIS Refresh Token (ORT)_ - (longer-lived, months/years) which are stored on client machines and are used as bearer tokens to gain access to resources via `stpd`
+  1. _OSiRIS Access Request (OAR)_ - Issued by _Central Authority_ `oakd` to one or more _Resource Authorities_ `stpd` to provision services and receive an...
+  2. _OSiRIS Access Grant (OAG)_ - Issued by _Resource Authorities_ `stpd` to the _Central Authority_ `oakd` to be included in an...
+  3. _OSiRIS Access Assertion (OAA)_ - To be stored by _Central Authority_ `oakd` and delivered to user agents as part of an..
+  4. _OSiRIS Access Token (OAT)_ - (short lived, hours/days/weeks) and / or an 
+  5. _OSiRIS Refresh Token (ORT)_ - (longer-lived, months/years) which are stored on client machines and are used as bearer tokens to gain access to resources via `stpd`
 
 ## Novel benefits of the OAA approach
 
@@ -27,9 +27,9 @@
 * Allows codification of many different types of access
 * Doesn't require a RDBMs or complicated database schema to know who is who, and who gets access to what.  Everything any participating system or user needs to know is codified within the bearer token and accessible only by the parties that have the encryption keys for the fragments.
 * Fine-grained control over service level expectations
- * Run of the mill availability levels e.g. 99.99% uptime
- * Well definined minimum service levels say "100Mbps guaranteed from disk on Network A to Network B"
- * Well defined penalties, fees, or refunds in the event that service levels are not maintained, 99.98% availablility = 10% refund
+  * Run of the mill availability levels e.g. 99.99% uptime
+  * Well definined minimum service levels say "100Mbps guaranteed from disk on Network A to Network B"
+  * Well defined penalties, fees, or refunds in the event that service levels are not maintained, 99.98% availablility = 10% refund
 
 ## Authority Types
 
