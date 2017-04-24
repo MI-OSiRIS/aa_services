@@ -277,7 +277,7 @@ attributeType(1.3.5.1.3.1.17128.313.1.35
     X-ORIGIN 'https://osris.org/')
 
 #
-# Attributes that hold string encodings of OAR, OAG, OAA, OAT, ORTs
+# Attributes that hold references to Token objects within LDAP
 #
 
 attributeType (1.3.5.1.3.1.17128.313.1.7

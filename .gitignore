@@ -1,6 +1,8 @@
+.*
 etc/*.conf
 etc/keys/*
 var/*
 !.gitkeep
 !var/.gitkeep
 !etc/keys/.gitkeep
+!.travis.yml
