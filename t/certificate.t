@@ -1,21 +1,21 @@
 use Test::More;
-use OSiRIS::AccessAssertion::Util qw/new_uuid :crypto/;
-use Mojo::Util qw/slurp b64_decode/;
+use OSiRIS::Util qw/slurp new_uuid :crypto/;
+use Mojo::Util qw/b64_decode/;
 
-use_ok('OSiRIS::AccessAssertion::RSA::Certificate', 'unharness');
+use_ok('OSiRIS::Crypto::RSA::Certificate', 'unharness');
 my $alice_cn = 'urn:uuid:' . new_uuid();
 gen_rsa_keys({type => 'enc', common_name => $alice_cn}, '/tmp/alice_enc.key', '/tmp/alice_enc.crt');
 
 # native load-from-PEM-file support
-my $cert = OSiRIS::AccessAssertion::RSA::Certificate->new('/tmp/alice_enc.crt');
+my $cert = OSiRIS::Crypto::RSA::Certificate->new('/tmp/alice_enc.crt');
 ok($cert->subject_locality eq 'Detroit', "testing new fangled certificate loading constructor");
 
 # native load-from-PEM string support
-my $cert2 = OSiRIS::AccessAssertion::RSA::Certificate->new(\slurp '/tmp/alice_enc.crt');
+my $cert2 = OSiRIS::Crypto::RSA::Certificate->new(\slurp '/tmp/alice_enc.crt');
 ok($cert2->subject_locality eq 'Detroit', "testing new fangled certificate loading constructor alt behavior");
 
 # loads certs from DER encoding by default
-my $cert3 = OSiRIS::AccessAssertion::RSA::Certificate->new(cert =>
+my $cert3 = OSiRIS::Crypto::RSA::Certificate->new(cert =>
     b64_decode(
         unharness(
             slurp(
@@ -30,18 +30,18 @@ ok($cert3->use eq "enc", "making sure this key is only good for encryption");
 ok($cert3->is_osiris_certificate, "making sure the certificate has the MI-OSiRIS OID in its extended key usage");
 
 gen_rsa_keys({type => 'sig', locality => 'Flint', common_name => $alice_cn}, '/tmp/alice_sig.key', '/tmp/alice_sig.crt');
-my $cert4 = OSiRIS::AccessAssertion::RSA::Certificate->new('/tmp/alice_sig.crt');
+my $cert4 = OSiRIS::Crypto::RSA::Certificate->new('/tmp/alice_sig.crt');
 ok($cert4->subject_locality eq 'Flint', "default overrides work");
 ok($cert4->use eq "sig", "key is only good for signatures and non repudiation");
 ok($cert4->is_osiris_certificate, "certificate has the MI-OSiRIS OID in extended key usage");
 
 # we want the private keys now too...
-use_ok('OSiRIS::AccessAssertion::RSA::Key');
+use_ok('OSiRIS::Crypto::RSA::Key');
 my ($alice_sig_key, $alice_enc_key, $alice_sig_cert, $alice_enc_cert) = (
-    OSiRIS::AccessAssertion::RSA::Key->new({ cert => '/tmp/alice_sig.crt', file => '/tmp/alice_sig.key'}),
-    OSiRIS::AccessAssertion::RSA::Key->new({ cert => '/tmp/alice_enc.crt', file => '/tmp/alice_enc.key'}),
-    OSiRIS::AccessAssertion::RSA::Certificate->new('/tmp/alice_sig.crt'),
-    OSiRIS::AccessAssertion::RSA::Certificate->new('/tmp/alice_enc.crt')
+    OSiRIS::Crypto::RSA::Key->new({ cert => '/tmp/alice_sig.crt', file => '/tmp/alice_sig.key'}),
+    OSiRIS::Crypto::RSA::Key->new({ cert => '/tmp/alice_enc.crt', file => '/tmp/alice_enc.key'}),
+    OSiRIS::Crypto::RSA::Certificate->new('/tmp/alice_sig.crt'),
+    OSiRIS::Crypto::RSA::Certificate->new('/tmp/alice_enc.crt')
 );
 
 #
@@ -51,10 +51,10 @@ my $bob_cn = 'urn:uuid:' . new_uuid();
 gen_rsa_keys({type => 'enc', common_name => $bob_cn}, '/tmp/bob_enc.key', '/tmp/bob_enc.crt');
 gen_rsa_keys({type => 'sig', common_name => $bob_cn}, '/tmp/bob_sig.key', '/tmp/bob_sig.crt');
 my ($bob_sig_key, $bob_enc_key, $bob_sig_cert, $bob_enc_cert) = (
-    OSiRIS::AccessAssertion::RSA::Key->new({ cert => '/tmp/bob_sig.crt', file => '/tmp/bob_sig.key'}),
-    OSiRIS::AccessAssertion::RSA::Key->new({ cert => '/tmp/bob_enc.crt', file => '/tmp/bob_enc.key'}),
-    OSiRIS::AccessAssertion::RSA::Certificate->new('/tmp/bob_sig.crt'),
-    OSiRIS::AccessAssertion::RSA::Certificate->new('/tmp/bob_enc.crt')
+    OSiRIS::Crypto::RSA::Key->new({ cert => '/tmp/bob_sig.crt', file => '/tmp/bob_sig.key'}),
+    OSiRIS::Crypto::RSA::Key->new({ cert => '/tmp/bob_enc.crt', file => '/tmp/bob_enc.key'}),
+    OSiRIS::Crypto::RSA::Certificate->new('/tmp/bob_sig.crt'),
+    OSiRIS::Crypto::RSA::Certificate->new('/tmp/bob_enc.crt')
 );    
 
 my $cleartext = "T0pS3CrEt MEssaGe";

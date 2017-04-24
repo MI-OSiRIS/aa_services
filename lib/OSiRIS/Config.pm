@@ -16,7 +16,7 @@ package OSiRIS::Config;
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-use OSiRIS::AccessAssertion::Util qw/slurp/;
+use OSiRIS::Util qw/slurp/;
 
 sub parse {
     my ($self, $file) = @_;

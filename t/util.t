@@ -1,6 +1,6 @@
 use Test::More;
 
-use_ok("OSiRIS::AccessAssertion::Util", ':all');
+use_ok("OSiRIS::Util", ':all');
 
 # test mojo::util import
 ok(length(trim(" ")) == 0, "trim");
@@ -37,9 +37,9 @@ my ($key_file, $cert_file) = gen_rsa_keys({
     force => 1,
 }, '/tmp/test.key', '/tmp/test.crt');
 
-use_ok("OSiRIS::AccessAssertion::RSA::Certificate");
+use_ok("OSiRIS::Crypto::RSA::Certificate");
 
-my $rsa_cert = OSiRIS::AccessAssertion::RSA::Certificate->new($cert_file);
+my $rsa_cert = OSiRIS::Crypto::RSA::Certificate->new($cert_file);
 ok($rsa_cert->subject_locality eq "Hell", "sanity checking gen_rsa_keys");
 
 unlink('/tmp/test.key');

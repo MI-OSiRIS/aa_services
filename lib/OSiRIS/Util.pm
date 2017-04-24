@@ -1,9 +1,9 @@
-package OSiRIS::AccessAssertion::Util;
+package OSiRIS::Util;
 
 # Utility Class for OSiRIS Access Assertions
 # Authored by: Michael Gregorowicz
 #
-# Copyright 2016 Wayne State University
+# Copyright 2017 Wayne State University
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,9 +30,12 @@ of OSiRIS Access Assertions (OAR, OAG, OAA, OAT and ORTs)
 
 =cut
 
+# this module needs to be loaded before I can get the export list.
 use Mojo::Base 'Mojo::Util';
-use Mojo::Util @Mojo::Util::EXPORT_OK;
+
+use Mojo::Util grep {!/slurp/} @Mojo::Util::EXPORT_OK;
 use Mojo::JSON qw/to_json from_json encode_json decode_json/;
+use Mojo::File;
 
 use Crypt::PK::RSA;
 use Crypt::Digest qw/digest_data digest_data_hex digest_file digest_file_hex/;
@@ -310,6 +313,11 @@ sub a85_decode {
     }
 
     substr $out, 0, length($out) - $padding
+}
+
+sub slurp {
+    my ($filename) = @_;
+    Mojo::File->new($filename)->slurp;
 }
 
 1;

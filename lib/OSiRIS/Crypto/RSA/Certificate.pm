@@ -1,4 +1,4 @@
-package OSiRIS::AccessAssertion::RSA::Certificate;
+package OSiRIS::Crypto::RSA::Certificate;
 
 # Class that encapsulates an RSA certificate used for validating
 # OSiRIS Access Assertions
@@ -19,7 +19,7 @@ package OSiRIS::AccessAssertion::RSA::Certificate;
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-use OSiRIS::AccessAssertion::Util qw/slurp b64_encode b64_decode b64u_decode b64u_encode monkey_patch/;
+use OSiRIS::Util qw/slurp b64_encode b64_decode b64u_decode b64u_encode monkey_patch/;
 use Mojo::Base 'Crypt::X509';
 use Crypt::PK::RSA;
 use Carp 'croak';

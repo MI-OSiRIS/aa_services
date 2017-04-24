@@ -1,4 +1,4 @@
-package OSiRIS::AccessAsssertion::Target;
+package OSiRIS::Crypto::Target;
 use Mojo::Base -base;
 use Mojo::UserAgent;
 use Mojo::Collection;

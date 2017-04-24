@@ -1,6 +1,6 @@
 use Test::More;
 
-use_ok('OSiRIS::AccessAssertion');
+use_ok('OSiRIS::Token');
 
 # my $aa = OSiRIS::AccessAssertion->new({
 

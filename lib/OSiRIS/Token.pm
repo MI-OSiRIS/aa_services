@@ -1,4 +1,4 @@
-package OSiRIS::AccessAssertion;
+package OSiRIS::Token;
 
 # Object for parsing, validating, and managing OSiRIS Access Assertions
 # Authored by: Michael Gregorowicz
@@ -21,8 +21,8 @@ package OSiRIS::AccessAssertion;
 
 =head1 NAME
 
-OSiRIS::AccessAssertion - Class for parsing, validating, and amanaging OSiRIS Access
-Assertion (OAA) objects
+OSiRIS::Token - Base class for the various types of OAA tokens: OAR, OAG, OAA, OAT, and
+ORT
 
 =head1 OVERVIEW
 
@@ -45,10 +45,9 @@ ultra fast resources?!  That'd be awesome.
 use Mojo::Base -base;
 use Mojo::Log;
 use OSiRIS::Config;
-use OSiRIS::Model;
-use OSiRIS::AccessAssertion::RSA::Certificate;
-use OSiRIS::AccessAssertion::RSA::Key;
-use OSiRIS::AccessAssertion::Util qw/b64u_decode b64u_encode encode_json digest_data gen_rsa_keys slurp/;
+use OSiRIS::Crypto::RSA::Certificate;
+use OSiRIS::Crypto::RSA::Key;
+use OSiRIS::Util qw/b64u_decode b64u_encode encode_json digest_data gen_rsa_keys slurp/;
 use Carp qw/croak confess/;
 use JSON::Validator;
 
@@ -84,7 +83,9 @@ has VALID_TYPES => sub {
 };
 
 # simple accessor/mutator methods
-has ['type', 'access', 'target'];
+has ['type', 'dn', 'in_storage', 'dirty'];
+
+=pod
 
 =item new(%opts) [B<constructor>]
 

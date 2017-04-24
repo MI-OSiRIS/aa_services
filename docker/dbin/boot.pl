@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 print "OSiRIS AA Docker Boot Loader\n";
-print "(c) 2016 Wayne State University\n\n";
+print "(c) 2017 Wayne State University\n\n";
 
 use POSIX qw(setuid setgid);
 use BSD::Resource;
