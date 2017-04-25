@@ -50,7 +50,6 @@
 #     with many EduOrgs via the osirisOrganizationalAffiliations attribute
 # ou=EduOrgs, dc=osris, dc=org - organizations - (osirisEduOrg, eduOrg) organizations that adhere
 #     closely to the EduOrg schema, and represent one organization
-# ou=Projects, dc=osris, dc=org - (osirisProject) osiris projects
 # ou=Groups, dc=osris, dc=org - (osirisGroup, posixGroup) osiris groups
 # ou=OARs, ou=Tokens, dc=osris, dc=org (osirisToken, osirisAccessRequest)
 # ou=OAGs, ou=Tokens, dc=osris, dc=org (osirisToken, osirisAccessGrant)
@@ -62,7 +61,7 @@
 #
 #            Attributes may not be in OID order
 #
-#               NEXT AVAILABLE OID #: 1.36
+#               NEXT AVAILABLE OID #: 1.37 (13 was removed and is also free)
 #
 # ###### PLEASE UPDATE IF YOU ADD OR REMOVE AN ATTRIBUTE ######
 
@@ -152,6 +151,10 @@ attributeType (1.3.5.1.3.1.17128.313.1.10
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     X-ORIGIN 'https://osris.org/')
 
+#
+# Since we've decided there's only one CO, OSiRIS, this will always be the OSiRIS CO's unique id
+#
+
 attributeType (1.3.5.1.3.1.17128.313.1.11
     NAME 'osirisAssociatedCOs'
     DESC 'place to store the unique ids of the COs this entity is associated with'
@@ -159,46 +162,52 @@ attributeType (1.3.5.1.3.1.17128.313.1.11
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     X-ORIGIN 'https://osris.org/')
 
+#
+# this is the attribute that maps the COmanage group to its corresponding osirisOrganization
+#
+
 attributeType (1.3.5.1.3.1.17128.313.1.12
-    NAME 'osirisAssociatedCOGroups'
-    DESC 'place to store the unique of the CO-Groups this entity is associated with'
+    NAME 'osirisAssociatedCOGroup'
+    DESC 'place to store the COmanage uniqueID of the CO-Groups this entity is associated with'
     EQUALITY caseExactMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
     X-ORIGIN 'https://osris.org/')
 
 #
-# Attributes that link Organizations and Projects back to their prospective member entities
+# Attributes that link osirisOrganizations and osirisEduOrganizations back to their prospective member entities
 #
+
+attributeType(1.3.5.1.3.1.17128.313.1.36
+    NAME 'osirisEduOrganizationalAffiliates'
+    DESC 'the DNs of the people, automata, groups, and organizations this osirisEduOrganization is affiliated with'
+    EQUALITY distinguishedNameMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    X-ORIGIN 'https://osris.org/')
 
 attributeType (1.3.5.1.3.1.17128.313.1.24
     NAME 'osirisOrganizationalAffiliates'
-    DESC 'the DNs of the people, automata, or projects this osirisOrganization is affiliated with'
-    EQUALITY distinguishedNameMatch
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
-    X-ORIGIN 'https://osris.org/')
-
-attributeType (1.3.5.1.3.1.17128.313.1.22
-    NAME 'osirisProjectAffiliates'
-    DESC 'the DNs of the people, automata, or organizations this osirisProject is affiliated with'
+    DESC 'the DNs of the people, automata, or osirisEduOrganizations this osirisOrganization is affiliated with'
     EQUALITY distinguishedNameMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
     X-ORIGIN 'https://osris.org/')
 
 #
-# Attributes that link People, Automata, or Projects, or Organizations to Projects and / or 
+# Attributes that link People, Automata, or Organizations to Projects and / or 
 # Organizations
 #
 
-attributeType (1.3.5.1.3.1.17128.313.1.23
-    NAME 'osirisOrganizationalAffiliations'
-    DESC 'the DNs of organizations this entity is affiliated with'
+attributeType(1.3.5.1.3.1.17128.313.1.22
+    NAME 'osirisEduOrganizationalAffiliations'
+    DESC 'the DNs of the osirisEduOrganizations this entity is affiliated with'
     EQUALITY distinguishedNameMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
     X-ORIGIN 'https://osris.org/')
 
-attributeType (1.3.5.1.3.1.17128.313.1.13
-    NAME 'osirisProjectAffiliations'
-    DESC 'the DNs of the osirisProjects this entity is affiliated with'
+
+attributeType (1.3.5.1.3.1.17128.313.1.23
+    NAME 'osirisOrganizationalAffiliations'
+    DESC 'the DNs of osirisOrganizations this entity is affiliated with'
     EQUALITY distinguishedNameMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
     X-ORIGIN 'https://osris.org/')
@@ -345,7 +354,7 @@ attributeType (1.3.5.1.3.1.17128.313.1.21
 
 attributeType (1.3.5.1.3.1.17128.313.1.25
     NAME 'osirisGroupDN'
-    DESC 'the DN of an osirisGroup object affiliated with this project'
+    DESC 'the DN of an osirisGroup object affiliated with this organization'
     EQUALITY distinguishedNameMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
     X-ORIGIN 'https://osris.org/')
@@ -356,7 +365,7 @@ attributeType (1.3.5.1.3.1.17128.313.1.25
 #
 #         ObjectClasses may not be in OID Order
 #
-#              NEXT AVAILABLE OID #: 11
+#              NEXT AVAILABLE OID #: 11 (6 was removed and is also free)
 #
 # ###### PLEASE UPDATE IF YOU ADD OR REMOVE AN OBJECTCLASS ######
 
@@ -370,21 +379,19 @@ objectClass (1.3.5.1.3.1.17128.313.1
         osirisAssociatedCOs $ osirisAssociatedCOGroups $ osirisCILogonMapString $
         osirisKeyThumbprint $ osirisEncryptionCertificate $ osirisSigningCertificate $
         osirisAccessTokens $ osirisRefreshTokens $ osirisAccessRequests $ osirisAccessGrants $
-        osirisAccessAssertions ))
+        osirisAccessAssertions $ osirisEduOrganizationalAffiliations $ osirisOrganizationalAffiliations ))
 
 objectClass (1.3.5.1.3.1.17128.313.2
     NAME 'osirisResourceAuthority' SUP osirisEntity STRUCTURAL
     MUST ( osirisKeyThumbprint $ osirisSigningCertificate $ osirisEncryptionCertificate $ osirisStpEndpoint )
     MAY ( 
-        osirisPendingAccessRequests $ osirisPendingAccessGrants $ osirisPendingAccessAssertions $
-        osirisOrganizationalAffiliations $ osirisProjectAffiliations ))
+        osirisPendingAccessRequests $ osirisPendingAccessGrants $ osirisPendingAccessAssertions ))
 
 objectClass (1.3.5.1.3.1.17128.313.3
     NAME 'osirisCentralAuthority' SUP osirisEntity STRUCTURAL
     MUST ( osirisKeyThumbprint $ osirisOakEndpoint $ osirisSigningCertificate $ osirisEncryptionCertificate )
     MAY ( 
-        osirisPendingAccessRequests $ osirisPendingAccessGrants $ osirisPendingAccessAssertions $
-        osirisOrganizationalAffiliations $ osirisProjectAffiliations ))
+        osirisPendingAccessRequests $ osirisPendingAccessGrants $ osirisPendingAccessAssertions ))
 
 objectClass (1.3.5.1.3.1.17128.313.4
     NAME 'osirisGroup' SUP groupOfNames STRUCTURAL
@@ -395,31 +402,31 @@ objectClass (1.3.5.1.3.1.17128.313.4
 objectClass (1.3.5.1.3.1.17128.313.5
     NAME 'osirisPerson' SUP osirisEntity STRUCTURAL
     DESC 'a person who is a user of OSiRIS systems'
-    MUST ( sn $ givenName $ eduPersonPrincipalName $ osirisOrganizationalAffiliations $ uid $ userPassword $ mail )
-    MAY ( osirisProjectAffiliations $ osirisOrganizationalAffiliations ))
-
-objectClass (1.3.5.1.3.1.17128.313.6
-    NAME 'osirisProject' SUP osirisEntity STRUCTURAL
-    DESC 'a project or science domain within the OSiRIS system'
-    MUST ( osirisGroupDN $ cn $ osirisOrganizationalAffiliations )
-    MAY ( osirisProjectAffiliates ))
-
-objectClass (1.3.5.1.3.1.17128.313.7
-    NAME 'osirisOrganization' SUP osirisEntity STRUCTURAL
-    DESC 'an organization affiliated with OSiRIS'
-    MUST ( mailAccessDomain $ eduPersonOrgDN )
-    MAY ( osirisProjectAffiliations $ osirisOrganizationalAffiliations ))
+    MUST ( sn $ givenName $ eduPersonPrincipalName $ uid $ userPassword $ mail )
 
 objectClass (1.3.5.1.3.1.17128.313.8
     NAME 'osirisAutomaton' SUP osirisEntity STRUCTURAL
     DESC 'a robot who is a user of OSiRIS systems'
     MUST ( cn $ uid $ userPassword )
-    MAY ( osirisProjectAffiliations $ osirisOrganizationalAffiliations $ userPassword ))
+
+#
+# osirisOrganizations (local to OSiRIS) and osirisEduOrganization (external Universities and 
+# institutions) are both "groups" of a kind.  osirisOrganizations may have an associated
+# osirisAssociatedCOGroup ID which is its link back to the COmanage group that represents
+# that organization
+#
+
+objectClass (1.3.5.1.3.1.17128.313.7
+    NAME 'osirisOrganization' SUP osirisEntity STRUCTURAL
+    DESC 'an organization affiliated with OSiRIS'
+    MUST ( owner )
+    MAY ( mailAccessDomain $ osirisAssociatedCOGroup $ organizationalAffiliates ))
 
 objectClass (1.3.5.1.3.1.17128.313.9
-    NAME 'osirisEduOrg' SUP osirisEntity STRUCTURAL
+    NAME 'osirisEduOrganization' SUP osirisEntity STRUCTURAL
     DESC 'an organization that represents a single EduOrg organizations'
-    MAY ( osirisProjectAffiliations $ osirisOrganizationalAffiliations ))
+    MUST ( mailAccessDomain )
+    MAY ( osirisEduOrganizationalAffiliates ))
     
 objectClass (1.3.5.1.3.1.17128.313.10
     NAME 'osirisToken' SUP top STRUCTURAL
