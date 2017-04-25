@@ -44,8 +44,8 @@
 # Topology...
 # ou=People, dc=osris, dc=org - (osirisPerson, eduPerson, posixAccount) people
 # ou=Automata, dc=osris, dc=org - (osirisAutomaton, eduPerson, posixAccount) robots, daemon users
-# ou=Authorities, dc=osris, dc=org - (osirisResourceAuthority, osirisCentralAuthority), central & resource
-#     authorities
+# ou=Central, ou=Authorities, dc=osris, dc=org - (osirisCentralAuthority)
+# ou=Resource, ou=Authorities, dc=osris, dc=org - (osirisResourceAuthority)  
 # ou=Organizations, dc=osris, dc=org - (osirisOrganization), osiris organizations, these can be affiliated
 #     with many EduOrgs via the osirisOrganizationalAffiliations attribute
 # ou=EduOrgs, dc=osris, dc=org - organizations - (osirisEduOrg, eduOrg) organizations that adhere
@@ -61,7 +61,7 @@
 #
 #            Attributes may not be in OID order
 #
-#               NEXT AVAILABLE OID #: 1.37 (13 was removed and is also free)
+#               NEXT AVAILABLE OID #: 1.37
 #
 # ###### PLEASE UPDATE IF YOU ADD OR REMOVE AN ATTRIBUTE ######
 
@@ -83,6 +83,14 @@ attributeType (1.3.5.1.3.1.17128.313.1.2
     EQUALITY octetStringMatch
     SINGLE-VALUE
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    X-ORIGIN 'https://osris.org/')
+
+attributeType(1.3.5.1.3.1.17128.313.1.13
+    NAME 'osirisCOmanageID'
+    DESC 'the Unique ID COmanage has created for this entity'
+    EQUALITY caseExactMatch
+    SINGLE-VALUE
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     X-ORIGIN 'https://osris.org/')
 
 #
@@ -163,12 +171,13 @@ attributeType (1.3.5.1.3.1.17128.313.1.11
     X-ORIGIN 'https://osris.org/')
 
 #
-# this is the attribute that maps the COmanage group to its corresponding osirisOrganization
+# this is the attribute that maps the COmanage group to its corresponding osirisOrganization it may end up
+# being the same value as the osirisCOmanageID but this attr being set lets us know its a group/org map.
 #
 
 attributeType (1.3.5.1.3.1.17128.313.1.12
     NAME 'osirisAssociatedCOGroup'
-    DESC 'place to store the COmanage uniqueID of the CO-Groups this entity is associated with'
+    DESC 'place to store the COmanage uniqueID of the CO-Groups this osirisOrgnization is associated with'
     EQUALITY caseExactMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
@@ -176,6 +185,7 @@ attributeType (1.3.5.1.3.1.17128.313.1.12
 
 #
 # Attributes that link osirisOrganizations and osirisEduOrganizations back to their prospective member entities
+# Affiliates are FROM Organization TO Person / Automaton
 #
 
 attributeType(1.3.5.1.3.1.17128.313.1.36
@@ -193,8 +203,8 @@ attributeType (1.3.5.1.3.1.17128.313.1.24
     X-ORIGIN 'https://osris.org/')
 
 #
-# Attributes that link People, Automata, or Organizations to Projects and / or 
-# Organizations
+# Attributes that link People, Automata, or Organizations to Projects and / or Organizations
+# Affiliations are People / Automata ==> Organization
 #
 
 attributeType(1.3.5.1.3.1.17128.313.1.22
@@ -393,11 +403,16 @@ objectClass (1.3.5.1.3.1.17128.313.3
     MAY ( 
         osirisPendingAccessRequests $ osirisPendingAccessGrants $ osirisPendingAccessAssertions ))
 
+#
+# Groups have become sort of superfluous now that we have the Affiliate / Affiliation mappings for 
+# osirisOrganization and osirisEduOrganization.  Right now they're just plain groups.  This may get
+# removed. Inherits anything meaningful from groupOfNames, also copies and enforces osirisEntity's 
+# MUST clause.
+#
 objectClass (1.3.5.1.3.1.17128.313.4
     NAME 'osirisGroup' SUP groupOfNames STRUCTURAL
     DESC 'groups of osirisEntity objects'
-    MUST ( cn $ osirisUniqueID )
-    MAY ( description $ member $ osirisAssociatedCOs $ osirisAssociatedCOGroups ))
+    MUST ( osirisUniqueID $ cn )
 
 objectClass (1.3.5.1.3.1.17128.313.5
     NAME 'osirisPerson' SUP osirisEntity STRUCTURAL
@@ -415,7 +430,6 @@ objectClass (1.3.5.1.3.1.17128.313.8
 # osirisAssociatedCOGroup ID which is its link back to the COmanage group that represents
 # that organization
 #
-
 objectClass (1.3.5.1.3.1.17128.313.7
     NAME 'osirisOrganization' SUP osirisEntity STRUCTURAL
     DESC 'an organization affiliated with OSiRIS'
