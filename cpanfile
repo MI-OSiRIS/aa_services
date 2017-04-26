@@ -1,0 +1,7 @@
+requires 'CryptX'
+requires 'Mojolicious'
+requires 'Crypt::X509'
+requires 'File::Copy'
+requires 'Crypt::Sodium'
+requires 'Net::LDAP'
+requires 'JSON::Validator'
