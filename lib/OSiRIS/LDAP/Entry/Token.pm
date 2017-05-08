@@ -5,7 +5,7 @@ use Mojo::Base 'OSiRIS::LDAP::Entry';
 has OBJECT_CLASS => sub { 'osirisToken' };
 
 sub type {
-    my $t = (split(/::/, ref shift))[-1];
+    (split(/::/, ref shift))[-1];
 }
 
 1;

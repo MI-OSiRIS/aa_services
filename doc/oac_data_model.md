@@ -79,6 +79,10 @@ Organizations will typically map to **COmanage** organizations / science domains
 | ------------ | --------- |
 | Base DN      | *ou=Resource, ou=Authorities, dc=osirs, dc=org* |
 | Object Classes | `osirisResourceAuthority` |
-| Perl Class (RA) | OSiRIS::LDAP::Entry::Entity::ResourceAuthority |
-| Required Attributes (RA) | `osirisKeyThumbprint`,  `osirisSigningCertificate`, `osirisEncryptionCertificate`, `osirisStpEndpoint` |
+| Perl Class | OSiRIS::LDAP::Entry::Entity::ResourceAuthority |
+| Required Attributes | `osirisKeyThumbprint`,  `osirisSigningCertificate`, `osirisEncryptionCertificate`, `osirisStpEndpoint` |
+
+## OSiRIS::LDAP::Entry::Token
+
+
 
