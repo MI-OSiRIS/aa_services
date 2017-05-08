@@ -1,5 +1,5 @@
-package OSiRIS::Token::Data::ORT;
+package OSiRIS::LDAP::Entry::Token::ORT;
 
-use Mojo::Base 'OSiRIS::Token::Data::Generic';
+use Mojo::Base 'OSiRIS::LDAP::Entry::Token';
 
 1;

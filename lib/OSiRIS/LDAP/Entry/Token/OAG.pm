@@ -1,5 +1,5 @@
-package OSiRIS::Token::Data::OAG;
+package OSiRIS::LDAP::Entry::Token::OAG;
 
-use Mojo::Base 'OSiRIS::Token::Data::Generic';
+use Mojo::Base 'OSiRIS::LDAP::Entry::Token';
 
 1;
