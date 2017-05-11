@@ -6,3 +6,4 @@ var/*
 !var/.gitkeep
 !etc/keys/.gitkeep
 !.travis.yml
+!.perltidyrc.conf
