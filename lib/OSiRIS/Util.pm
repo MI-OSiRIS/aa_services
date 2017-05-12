@@ -33,7 +33,7 @@ of OSiRIS Access Assertions (OAR, OAG, OAA, OAT and ORTs)
 # this module needs to be loaded before I can get the export list.
 use Mojo::Base 'Mojo::Util';
 
-use Mojo::Util grep {!/slurp/} @Mojo::Util::EXPORT_OK;
+use Mojo::Util grep {!/(slurp|spurt)/} @Mojo::Util::EXPORT_OK;
 use Mojo::JSON qw/to_json from_json encode_json decode_json/;
 use Mojo::File;
 
@@ -46,6 +46,9 @@ use UUID::Tiny;
 use Carp qw/croak/;
 
 use Exporter 'import';
+
+our $posix_uid_state = $ENV{AA_HOME} . '/var/state/posix_next_uid';
+our $posix_gid_state = $ENV{AA_HOME} . '/var/state/posix_next_gid';
 
 our @EXPORT_OK = (
     @Mojo::Util::EXPORT_OK,
@@ -86,6 +89,30 @@ our %EXPORT_TAGS = (
 monkey_patch(__PACKAGE__, 'b64u_encode', \&encode_base64url);
 monkey_patch(__PACKAGE__, 'b64u_decode', \&decode_base64url);
 monkey_patch(__PACKAGE__, 'gen_rsa_keys', \&gen_self_signed_rsa_pair);
+
+sub next_posix_uid {
+    if (my $i = slurp($posix_next_uid)) {
+        $i++;
+    } else {
+        $i = 100000;
+    }
+    spurt($posix_next_uid, $i);
+}
+
+sub next_posix_uid {
+    if (my $i = slurp($posix_next_gid)) {
+        $i++;
+    } else {
+        $i = 100000;
+    }
+    spurt($posix_next_gid, $i);
+}
+
+sub next_posix_ids {
+    my $uid = next_posix_uid();
+    my $gid = next_posix_gid();
+    return ($uid, $gid);
+}
 
 sub self_sign_key {
     my ($user_config, $key_file, $cert_file) = @_;
@@ -318,6 +345,11 @@ sub a85_decode {
 sub slurp {
     my ($filename) = @_;
     Mojo::File->new($filename)->slurp;
+}
+
+sub spurt {
+    my ($filename, $data) = @_;
+    Mojo::File->new($filename)->spurt($data);
 }
 
 1;
