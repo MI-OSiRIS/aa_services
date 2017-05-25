@@ -1,0 +1,20 @@
+#
+# OSiRIS Fixtures LDIF File
+#
+# See: doc/oac_data_model.md for more information
+#
+# Topology...
+# ou=People, dc=osris, dc=org - (osirisPerson, eduPerson, posixAccount) people
+# ou=Automata, dc=osris, dc=org - (osirisAutomaton, eduPerson, posixAccount) robots, daemon users
+# ou=Central, ou=Authorities, dc=osris, dc=org - (osirisCentralAuthority)
+# ou=Resource, ou=Authorities, dc=osris, dc=org - (osirisResourceAuthority)  
+# ou=Organizations, dc=osris, dc=org - (osirisOrganization), osiris organizations, these can be affiliated
+#     with many EduOrgs via the osirisOrganizationalAffiliations attribute
+# ou=EduOrganizations, dc=osris, dc=org - organizations - (osirisEduOrgganization, eduOrg) organizations that adhere
+#     closely to the EduOrg schema, and represent one organization
+# ou=Groups, dc=osris, dc=org - (osirisGroup, posixGroup) osiris groups
+# ou=OARs, ou=Tokens, dc=osris, dc=org (osirisToken, osirisAccessRequest)
+# ou=OAGs, ou=Tokens, dc=osris, dc=org (osirisToken, osirisAccessGrant)
+# ou=OAAs, ou=Tokens, dc=osris, dc=org (osirisToken, osirisAccessAssertion)
+# ou=OATs, ou=Tokens, dc=osris, dc=org (osirisToken, osirisAccessToken)
+# ou=ORTs, ou=Tokens, dc=osris, dc=org (osirisToken, osirisRefreshToken)
