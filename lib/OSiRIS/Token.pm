@@ -74,11 +74,11 @@ has my_cert => sub { return $cert };
 # these are the types of assertions we can possibly be
 has VALID_TYPES => sub {
     return {
-        OAR => 'doc/schema/json/osiris_access_request.jsd',
-        OAG => 'doc/schema/json/osiris_access_grant.jsd',
-        OAA => 'doc/schema/json/osiris_access_assertion.jsd',
-        OAT => 'doc/schema/json/osiris_access_token.jsd',
-        ORT => 'doc/schema/json/osiris_refresh_token.jsd',
+        OAR => 'data/schema/json/osiris_access_request.jsd',
+        OAG => 'data/schema/json/osiris_access_grant.jsd',
+        OAA => 'data/schema/json/osiris_access_assertion.jsd',
+        OAT => 'data/schema/json/osiris_access_token.jsd',
+        ORT => 'data/schema/json/osiris_refresh_token.jsd',
     }
 };
 

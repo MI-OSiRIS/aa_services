@@ -3,18 +3,84 @@
 #
 # See: doc/oac_data_model.md for more information
 #
-# Topology...
-# ou=People, dc=osris, dc=org - (osirisPerson, eduPerson, posixAccount) people
-# ou=Automata, dc=osris, dc=org - (osirisAutomaton, eduPerson, posixAccount) robots, daemon users
-# ou=Central, ou=Authorities, dc=osris, dc=org - (osirisCentralAuthority)
-# ou=Resource, ou=Authorities, dc=osris, dc=org - (osirisResourceAuthority)  
-# ou=Organizations, dc=osris, dc=org - (osirisOrganization), osiris organizations, these can be affiliated
-#     with many EduOrgs via the osirisOrganizationalAffiliations attribute
-# ou=EduOrganizations, dc=osris, dc=org - organizations - (osirisEduOrgganization, eduOrg) organizations that adhere
-#     closely to the EduOrg schema, and represent one organization
-# ou=Groups, dc=osris, dc=org - (osirisGroup, posixGroup) osiris groups
-# ou=OARs, ou=Tokens, dc=osris, dc=org (osirisToken, osirisAccessRequest)
-# ou=OAGs, ou=Tokens, dc=osris, dc=org (osirisToken, osirisAccessGrant)
-# ou=OAAs, ou=Tokens, dc=osris, dc=org (osirisToken, osirisAccessAssertion)
-# ou=OATs, ou=Tokens, dc=osris, dc=org (osirisToken, osirisAccessToken)
-# ou=ORTs, ou=Tokens, dc=osris, dc=org (osirisToken, osirisRefreshToken)
+
+# First the hierarchy
+dn: ou=People, dc=osris, dc=org
+objectClass: organizationalUnit
+ou: People
+
+dn: ou=Automata, dc=osris, dc=org
+objectClass: organizationalUnit
+ou: Automata
+
+dn: ou=Authorities, dc=osris, dc=org
+objectClass: organizationalUnit
+ou: Authorities
+
+dn: ou=Central, ou=Authorities, dc=osris, dc=org
+objectClass: organizationalUnit
+ou: Authorities
+ou: Central
+
+dn: ou=Resource, ou=Authorities, dc=osris, dc=org
+objectClass: organizationalUnit
+ou: Authorities
+ou: Resource
+
+dn: ou=Organizations, dc=osris, dc=org
+objectClass: organizationalUnit
+ou: Organizations
+
+dn: ou=EduOrganizations, dc=osris, dc=org
+objectClass: organizationalUnit
+ou: EduOrganizations
+
+dn: ou=Groups, dc=osris, dc=org
+objectClass: organizationalUnit
+ou: Groups
+
+dn: ou=Tokens, dc=osris, dc=org
+objectClass: organizationalUnit
+ou: Tokens
+
+dn: ou=OARs, ou=Tokens, dc=osris, dc=org
+objectClass: organizationalUnit
+ou: Tokens
+ou: OARs
+
+dn: ou=OAGs, ou=Tokens, dc=osris, dc=org
+objectClass: organizationalUnit
+ou: Tokens
+ou: OAGs
+
+dn: ou=OAAs, ou=Tokens, dc=osris, dc=org
+objectClass: organizationalUnit
+ou: Tokens
+ou: OAAs
+
+dn: ou=OATs, ou=Tokens, dc=osris, dc=org
+objectClass: organizationalUnit
+ou: Tokens
+ou: OATs
+
+dn: ou=ORTs, ou=Tokens, dc=osris, dc=org
+objectClass: organizationalUnit
+ou: Tokens
+ou: ORTs
+
+dn: cn=Wayne State University, ou=EduOrganizations, dc=osris, dc=org
+objectClass: osirisEduOrganization
+objectClass: eduOrg
+cn: Wayne State University
+ouid: 71FB8B45-A724-438F-A802-183F3BBEE8C3
+description: A premier research university serving a diverse body of motivated students in vibrant Midtown, the cultural center of Detroit.
+eduOrgHomePageURI: https://wayne.edu
+eduOrgIdentityAuthNPolicyURI: https://computing.wayne.edu/accessid/
+eduOrgWhitePagesURI: https://wayne.edu/people/
+l: Detroit
+mailAccessDomain: wayne.edu
+o: Wayne State University
+postalCode: 48202
+postalAddress: Wayne State University$42. W. Warren Ave.$Detroit, MI 48202
+st: MI
+telephoneNumber: +1 313 577 2424

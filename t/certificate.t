@@ -61,7 +61,6 @@ my $cleartext = "T0pS3CrEt MEssaGe";
 # encrypt cleartext for alice...
 my $encoded_ciphertext = $alice_enc_cert->encrypt($cleartext);
 
-
 my $signature = $bob_sig_key->sign($encoded_ciphertext);
 ok($bob_sig_cert->verify($signature, $encoded_ciphertext), "verify that bob signed the encoded ciphertext");
 ok($alice_enc_key->decrypt($encoded_ciphertext) eq $cleartext, "alice was able to decrypt bob's $cleartext");

@@ -91,21 +91,25 @@ monkey_patch(__PACKAGE__, 'b64u_decode', \&decode_base64url);
 monkey_patch(__PACKAGE__, 'gen_rsa_keys', \&gen_self_signed_rsa_pair);
 
 sub next_posix_uid {
-    if (my $i = slurp($posix_next_uid)) {
+    my ($i);
+    if ($i = slurp($posix_uid_state)) {
         $i++;
     } else {
         $i = 100000;
     }
-    spurt($posix_next_uid, $i);
+    spurt($posix_uid_state, $i);
+    return $i;
 }
 
-sub next_posix_uid {
-    if (my $i = slurp($posix_next_gid)) {
+sub next_posix_gid {
+    my ($i);
+    if ($i = slurp($posix_gid_state)) {
         $i++;
     } else {
         $i = 100000;
     }
-    spurt($posix_next_gid, $i);
+    spurt($posix_gid_state, $i);
+    return $i;
 }
 
 sub next_posix_ids {
