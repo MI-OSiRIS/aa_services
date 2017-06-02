@@ -68,6 +68,57 @@ objectClass: organizationalUnit
 ou: Tokens
 ou: ORTs
 
+dn: cn=University of Michigan, ou=EduOrganizations, dc=osris, dc=org
+objectClass: osirisEduOrganization
+objectClass: eduOrg
+cn: University of Michigan
+ouid: 74039921-9BD9-42D6-B537-7DD26826D3E5
+description:  One of the foremost research universities in the United States with campuses in Ann Arbor, Flint, and Dearborn.  
+eduOrgHomePageURI: http://umich.edu/
+eduOrgIdentityAuthNPolicyURI: http://www.itcs.umich.edu/uniqname/
+eduOrgWhitePagesURI: https://mcommunity.umich.edu
+l: Ann Arbor
+mailAccessDomain: umich.edu
+o: University of Michigan
+postalCode: 48109
+postalAddress: University of Michigan$500 S. State Street$Ann Arbor, MI 48109
+st: MI
+telephoneNumber: +1 734 764 1817
+
+dn: cn=Michigan State University, ou=EduOrganizations, dc=osris, dc=org
+objectClass: osirisEduOrganization
+objectClass: eduOrg
+cn: Michigan State University
+ouid: E8F3F193-24C6-4B5A-858C-A1A346C879C4
+description:  A top-ranking public research university located in East Lansing. 
+eduOrgHomePageURI: http://www.msu.edu/
+eduOrgIdentityAuthNPolicyURI: https://netid.msu.edu/
+eduOrgWhitePagesURI: https://search.msu.edu/people/
+l: East Lansing
+mailAccessDomain: msu.edu
+o: Michigan State University
+postalCode: 48224
+postalAddress:Michigan State University$220 Trowbridge Rd$East Lansing, MI 48824
+st: MI
+telephoneNumber: +1 517 355 1855
+
+dn: cn=Indiana University, ou=EduOrganizations, dc=osris, dc=org
+objectClass: osirisEduOrganization
+objectClass: eduOrg
+cn: Indiana University
+ouid: 4F08EA46-B981-4C37-A1FB-8C9DE44929F1
+description:  Indiana University is a multi-campus public university system in the state of Indiana with core campuses in Bloomington and Indianapolis
+eduOrgHomePageURI: https://www.iu.edu/
+eduOrgIdentityAuthNPolicyURI: https://one.iu.edu/collection/iu/access-management
+eduOrgWhitePagesURI: http://people.iu.edu/
+l: Bloomington
+mailAccessDomain: iu.edu
+o: Indiana University
+postalCode: 
+postalAddress:Indiana University$107 S. Indiana Ave.$Bloomington, IN 47405-7000
+st: IN
+telephoneNumber: +1 812 855 4848
+
 dn: cn=Wayne State University, ou=EduOrganizations, dc=osris, dc=org
 objectClass: osirisEduOrganization
 objectClass: eduOrg
